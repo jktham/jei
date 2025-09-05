@@ -1,0 +1,1 @@
+{FluidName:"tritium_hydride",Amount:1000}

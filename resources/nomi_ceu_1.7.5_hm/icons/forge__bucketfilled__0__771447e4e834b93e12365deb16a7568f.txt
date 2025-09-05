@@ -1,0 +1,1 @@
+{FluidName:"lightly_steamcracked_naphtha",Amount:1000}

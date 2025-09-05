@@ -1,0 +1,1 @@
+{FluidName:"aluminium",Amount:1000}

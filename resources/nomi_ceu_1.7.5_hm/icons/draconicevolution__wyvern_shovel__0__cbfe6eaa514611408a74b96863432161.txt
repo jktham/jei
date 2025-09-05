@@ -1,0 +1,1 @@
+{DEUpgrades:{rfCap:2b,digSpeed:2b,digAOE:2b},Energy:32000000}

@@ -1,0 +1,1 @@
+{FluidName:"impure_enriched_naquadah_solution",Amount:1000}

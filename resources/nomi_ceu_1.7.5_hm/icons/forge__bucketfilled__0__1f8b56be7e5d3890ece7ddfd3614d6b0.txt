@@ -1,0 +1,1 @@
+{FluidName:"molten.ruridit",Amount:1000}

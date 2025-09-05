@@ -1,0 +1,1 @@
+{GT.Tool:{Material:"rubber",MaxDurability:255,HarvestLevel:1,ToolSpeed:4.0f,AttackDamage:0.0f},GT.Behaviours:{},HideFlags:2}

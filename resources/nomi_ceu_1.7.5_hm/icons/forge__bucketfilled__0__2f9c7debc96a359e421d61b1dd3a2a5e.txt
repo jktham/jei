@@ -1,0 +1,1 @@
+{FluidName:"plasma.helium",Amount:1000}

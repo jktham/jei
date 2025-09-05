@@ -1,0 +1,1 @@
+{FluidName:"molten.osmiridium",Amount:1000}

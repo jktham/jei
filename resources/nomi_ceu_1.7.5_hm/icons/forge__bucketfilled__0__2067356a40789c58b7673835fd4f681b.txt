@@ -1,0 +1,1 @@
+{FluidName:"fish_oil",Amount:1000}

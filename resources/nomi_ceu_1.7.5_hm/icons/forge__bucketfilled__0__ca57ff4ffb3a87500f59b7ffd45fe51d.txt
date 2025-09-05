@@ -1,0 +1,1 @@
+{FluidName:"tough_alloy",Amount:1000}

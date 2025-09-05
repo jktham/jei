@@ -1,0 +1,1 @@
+{FluidName:"molten.tantalum_carbide",Amount:1000}

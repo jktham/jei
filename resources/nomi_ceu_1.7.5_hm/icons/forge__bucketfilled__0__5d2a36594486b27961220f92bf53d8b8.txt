@@ -1,0 +1,1 @@
+{FluidName:"magnesium_diboride",Amount:1000}

@@ -1,0 +1,1 @@
+{FluidName:"hydrocracked_ethane",Amount:1000}

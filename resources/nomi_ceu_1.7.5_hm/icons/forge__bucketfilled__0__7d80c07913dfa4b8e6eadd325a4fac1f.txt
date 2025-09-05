@@ -1,0 +1,1 @@
+{FluidName:"helium_3",Amount:1000}

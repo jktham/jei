@@ -1,0 +1,1 @@
+{FluidName:"damascus_steel",Amount:1000}

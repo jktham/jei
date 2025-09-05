@@ -1,0 +1,1 @@
+{FluidName:"plasma.nickel",Amount:1000}

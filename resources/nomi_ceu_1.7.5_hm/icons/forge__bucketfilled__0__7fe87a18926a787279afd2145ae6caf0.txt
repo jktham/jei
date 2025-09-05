@@ -1,0 +1,1 @@
+{FluidName:"phosphorus_trichloride",Amount:1000}

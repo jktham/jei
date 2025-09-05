@@ -1,0 +1,1 @@
+{FluidName:"potin",Amount:1000}

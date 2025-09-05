@@ -1,0 +1,1 @@
+{FluidName:"molten.stellite_100",Amount:1000}

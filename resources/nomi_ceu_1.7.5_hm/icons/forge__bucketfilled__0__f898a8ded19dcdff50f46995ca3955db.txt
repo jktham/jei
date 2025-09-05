@@ -1,0 +1,1 @@
+{FluidName:"tin_alloy",Amount:1000}

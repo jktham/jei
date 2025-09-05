@@ -1,0 +1,1 @@
+{FluidName:"sulfuric_gas",Amount:1000}

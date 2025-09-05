@@ -1,0 +1,1 @@
+{MaxCharge:2147483647L,GT.Behaviours:{AoERow:3,MaxAoERow:3,MaxAoELayer:6,TorchPlacing:1b,MaxAoEColumn:3,AoELayer:6,AoEColumn:3},GT.Tool:{Material:"gregtech:iron",MaxDurability:1535,Durability:0},DisallowContainerItem:0b,HideFlags:2,Charge:2147483647L}

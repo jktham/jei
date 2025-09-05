@@ -1,0 +1,1 @@
+{FluidName:"coal_tar",Amount:1000}

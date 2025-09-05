@@ -1,0 +1,1 @@
+{FluidName:"raw_growth_medium",Amount:1000}

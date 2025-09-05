@@ -1,0 +1,1 @@
+{FluidName:"samarium_iron_arsenic_oxide",Amount:1000}

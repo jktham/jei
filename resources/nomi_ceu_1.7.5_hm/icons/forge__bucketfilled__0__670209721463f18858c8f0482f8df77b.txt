@@ -1,0 +1,1 @@
+{FluidName:"vanadium_gallium",Amount:1000}

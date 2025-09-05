@@ -1,0 +1,1 @@
+{DisallowContainerItem:0b,GT.Tool:{Material:"gregtech:iron",MaxDurability:255,Durability:0},HideFlags:2,GT.Behaviours:{HarvestIce:1b}}

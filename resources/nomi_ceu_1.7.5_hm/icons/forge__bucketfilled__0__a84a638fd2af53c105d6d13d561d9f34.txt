@@ -1,0 +1,1 @@
+{FluidName:"distilled_water",Amount:1000}

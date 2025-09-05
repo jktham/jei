@@ -1,0 +1,1 @@
+{FluidName:"red_steel",Amount:1000}

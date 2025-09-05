@@ -1,0 +1,1 @@
+{FluidName:"ruridit",Amount:1000}
