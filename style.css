@@ -1,0 +1,34 @@
+:root {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 1);
+  background-color: #101010;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 1rem;
+  height: calc(100dvh - 2rem);
+}
+
+#search {
+  width: 20rem
+}
+
+#result {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+#id {
+  color: #aaaaaa;
+}

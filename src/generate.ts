@@ -20,13 +20,13 @@ async function generatePack(name: string) {
 	fs.mkdirSync(`./public/data/${name}`);
 
 	let names = parseNames(fs.readFileSync(`./resources/${name}/names.txt`).toString());
-	fs.writeFileSync(`./public/data/${name}/names.json`, JSON.stringify(Object.fromEntries(names)));
+	fs.writeFileSync(`./public/data/${name}/names.json`, JSON.stringify([...names.entries()]));
 	console.log(`parsed ${names.size} item names`);
 
 	let oredict = parseOredict(fs.readFileSync(`./resources/${name}/oredict.txt`).toString(), names);
-	fs.writeFileSync(`./public/data/${name}/oredict.json`, JSON.stringify(Object.fromEntries(oredict)));
+	fs.writeFileSync(`./public/data/${name}/oredict.json`, JSON.stringify([...oredict.entries()]));
 	let oredict_inv = invertOredict(oredict);
-	fs.writeFileSync(`./public/data/${name}/oredict_inv.json`, JSON.stringify(Object.fromEntries(oredict_inv)));
+	fs.writeFileSync(`./public/data/${name}/oredict_inv.json`, JSON.stringify([...oredict_inv.entries()]));
 	console.log(`parsed ${oredict.size} oredict entries`);
 
 	let recipes = parseRecipes(fs.readFileSync(`./resources/${name}/recipes.json`).toString());
