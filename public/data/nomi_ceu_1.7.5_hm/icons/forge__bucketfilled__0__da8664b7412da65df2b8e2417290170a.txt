@@ -1,0 +1,1 @@
+{FluidName:"light_fuel",Amount:1000}

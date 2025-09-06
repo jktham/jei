@@ -1,0 +1,1 @@
+{FluidName:"sodium_persulfate",Amount:1000}

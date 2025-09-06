@@ -1,0 +1,1 @@
+{FluidName:"iron_iii_chloride",Amount:1000}

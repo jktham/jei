@@ -12,4 +12,4 @@ npm run dev
 	- oredict dump in `oredict.txt` using `/ct oredict`
 	- item names in `names.txt` using `/ct names display`
 	- item icons in `icons/` using https://github.com/CyclopsMC/IconExporter with nbt hashing enabled
-- todo
+- `npm run generate` to parse the pack data

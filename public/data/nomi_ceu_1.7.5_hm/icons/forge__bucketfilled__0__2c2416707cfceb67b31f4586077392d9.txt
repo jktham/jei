@@ -1,0 +1,1 @@
+{FluidName:"gallium",Amount:1000}

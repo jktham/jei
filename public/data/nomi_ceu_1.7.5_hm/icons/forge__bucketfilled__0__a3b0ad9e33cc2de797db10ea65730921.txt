@@ -1,0 +1,1 @@
+{FluidName:"nitrous_oxide",Amount:1000}

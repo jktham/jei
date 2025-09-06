@@ -1,0 +1,1 @@
+{StoredEnchantments:[{id:7s,lvl:1s}]}

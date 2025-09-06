@@ -1,0 +1,1 @@
+{FluidName:"tritanium",Amount:1000}

@@ -1,0 +1,1 @@
+{FluidName:"uranium_triplatinum",Amount:1000}

@@ -1,0 +1,1 @@
+{FluidName:"kapton_k",Amount:1000}

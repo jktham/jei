@@ -1,0 +1,1 @@
+{FluidName:"taranium_depleted_helium",Amount:1000}

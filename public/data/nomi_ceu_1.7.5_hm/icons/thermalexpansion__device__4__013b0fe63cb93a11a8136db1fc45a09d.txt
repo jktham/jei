@@ -1,0 +1,1 @@
+{Facing:3b,SideCache:[B;1B,1B,2B,2B,2B,2B],RSControl:0b,Energy:0}

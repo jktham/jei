@@ -1,0 +1,1 @@
+{FluidName:"rhodium_sulfate",Amount:1000}

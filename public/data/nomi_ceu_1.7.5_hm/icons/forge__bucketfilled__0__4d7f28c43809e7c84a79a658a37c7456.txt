@@ -1,0 +1,1 @@
+{FluidName:"indium",Amount:1000}

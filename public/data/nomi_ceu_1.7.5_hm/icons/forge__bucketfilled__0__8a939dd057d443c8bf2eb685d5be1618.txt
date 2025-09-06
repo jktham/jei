@@ -1,0 +1,1 @@
+{FluidName:"gelatin_mixture",Amount:1000}

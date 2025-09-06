@@ -1,0 +1,1 @@
+{FluidName:"gasoline_premium",Amount:1000}

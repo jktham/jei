@@ -1,0 +1,1 @@
+{FluidName:"samarium",Amount:1000}

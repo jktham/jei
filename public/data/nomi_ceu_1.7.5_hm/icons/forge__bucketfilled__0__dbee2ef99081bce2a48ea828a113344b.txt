@@ -1,0 +1,1 @@
+{FluidName:"severely_steamcracked_light_fuel",Amount:1000}

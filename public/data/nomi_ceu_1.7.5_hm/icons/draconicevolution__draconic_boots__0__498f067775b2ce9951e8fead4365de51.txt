@@ -1,0 +1,1 @@
+{DEUpgrades:{rfCap:3b,jumpBoost:3b,shieldCap:3b,shieldRec:3b},Energy:256000000}

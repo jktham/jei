@@ -1,0 +1,1 @@
+{FluidName:"molten.uranium_triplatinum",Amount:1000}

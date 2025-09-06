@@ -1,0 +1,1 @@
+{FluidName:"niobium_nitride",Amount:1000}

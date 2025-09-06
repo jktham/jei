@@ -1,0 +1,1 @@
+{FluidName:"krypton",Amount:1000}

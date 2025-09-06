@@ -1,0 +1,1 @@
+{FluidName:"annealed_copper",Amount:1000}

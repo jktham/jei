@@ -1,0 +1,1 @@
+{FluidName:"liquid_oxygen",Amount:1000}

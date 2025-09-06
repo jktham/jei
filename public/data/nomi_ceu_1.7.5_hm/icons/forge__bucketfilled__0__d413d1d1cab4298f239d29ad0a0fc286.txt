@@ -1,0 +1,1 @@
+{FluidName:"polyvinyl_chloride",Amount:1000}

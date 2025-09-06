@@ -1,0 +1,1 @@
+{FluidName:"molten.magnesium_diboride",Amount:1000}

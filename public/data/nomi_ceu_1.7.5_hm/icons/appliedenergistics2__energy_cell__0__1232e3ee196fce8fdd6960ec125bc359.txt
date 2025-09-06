@@ -1,0 +1,1 @@
+{internalCurrentPower:200000.0d,internalMaxPower:200000.0d}

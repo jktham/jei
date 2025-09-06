@@ -1,0 +1,1 @@
+{FluidName:"mercury_barium_calcium_cuprate",Amount:1000}

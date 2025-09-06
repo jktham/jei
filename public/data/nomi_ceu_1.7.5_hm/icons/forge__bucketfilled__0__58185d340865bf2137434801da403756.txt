@@ -1,0 +1,1 @@
+{FluidName:"nether_air",Amount:1000}

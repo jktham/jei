@@ -1,0 +1,1 @@
+{FluidName:"plasma.americium",Amount:1000}

@@ -1,0 +1,1 @@
+{FluidName:"sulfuric_light_fuel",Amount:1000}

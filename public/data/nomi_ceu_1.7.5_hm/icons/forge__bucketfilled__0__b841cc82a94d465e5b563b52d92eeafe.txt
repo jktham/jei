@@ -1,0 +1,1 @@
+{FluidName:"einsteinium",Amount:1000}

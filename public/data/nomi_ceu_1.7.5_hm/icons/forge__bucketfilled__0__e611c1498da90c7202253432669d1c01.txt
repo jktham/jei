@@ -1,0 +1,1 @@
+{FluidName:"reinforced_epoxy_resin",Amount:1000}

@@ -1,0 +1,1 @@
+{FluidName:"depleted_uranium_hexafluoride",Amount:1000}

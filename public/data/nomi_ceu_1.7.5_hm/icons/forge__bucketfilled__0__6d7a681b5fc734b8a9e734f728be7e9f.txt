@@ -1,0 +1,1 @@
+{FluidName:"molten.hastelloy_c_276",Amount:1000}

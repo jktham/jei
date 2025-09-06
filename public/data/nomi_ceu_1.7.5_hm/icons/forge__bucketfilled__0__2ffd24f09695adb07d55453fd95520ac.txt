@@ -1,0 +1,1 @@
+{FluidName:"sulfuric_copper_solution",Amount:1000}

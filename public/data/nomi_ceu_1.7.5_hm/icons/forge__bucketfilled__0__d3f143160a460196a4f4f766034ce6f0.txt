@@ -1,0 +1,1 @@
+{FluidName:"niobium_titanium",Amount:1000}

@@ -1,0 +1,1 @@
+{DEUpgrades:{rfCap:2b,moveSpeed:2b,shieldCap:2b,shieldRec:2b},Energy:32000000}

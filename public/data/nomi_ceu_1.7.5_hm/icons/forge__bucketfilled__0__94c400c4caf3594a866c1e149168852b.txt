@@ -1,0 +1,1 @@
+{FluidName:"lightly_hydrocracked_naphtha",Amount:1000}

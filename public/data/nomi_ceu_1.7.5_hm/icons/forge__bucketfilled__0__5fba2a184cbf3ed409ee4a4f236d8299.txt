@@ -1,0 +1,1 @@
+{FluidName:"vinyl_chloride",Amount:1000}

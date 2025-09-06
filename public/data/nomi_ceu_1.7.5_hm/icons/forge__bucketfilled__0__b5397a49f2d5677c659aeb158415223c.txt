@@ -1,0 +1,1 @@
+{FluidName:"nether_star",Amount:1000}

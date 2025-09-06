@@ -1,0 +1,1 @@
+{FluidName:"ruby_slurry",Amount:1000}

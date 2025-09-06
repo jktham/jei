@@ -1,0 +1,1 @@
+{FluidName:"hot_naquadah_oxide_neocryolite_solution",Amount:1000}

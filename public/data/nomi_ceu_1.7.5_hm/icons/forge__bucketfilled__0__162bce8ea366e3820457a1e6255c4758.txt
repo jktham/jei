@@ -1,0 +1,1 @@
+{FluidName:"enriched_naquadah_trinium_europium_duranide",Amount:1000}

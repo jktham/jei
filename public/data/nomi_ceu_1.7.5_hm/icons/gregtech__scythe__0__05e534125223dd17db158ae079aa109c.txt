@@ -1,0 +1,1 @@
+{DisallowContainerItem:0b,GT.Tool:{Material:"gregtech:iron",MaxDurability:767,Durability:0},HideFlags:2,GT.Behaviours:{MaxAoELayer:2,AoERow:2,MaxAoEColumn:2,AoELayer:2,AoEColumn:2,MaxAoERow:2}}
