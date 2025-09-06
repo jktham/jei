@@ -23,11 +23,14 @@ async function generatePack(name: string) {
 	fs.writeFileSync(`./public/data/${name}/names.json`, JSON.stringify(Object.fromEntries(names)));
 	console.log(`parsed ${names.size} item names`);
 
-	let oredict = parseOredict(fs.readFileSync(`./resources/${name}/oredict.txt`).toString());
+	let oredict = parseOredict(fs.readFileSync(`./resources/${name}/oredict.txt`).toString(), names);
 	fs.writeFileSync(`./public/data/${name}/oredict.json`, JSON.stringify(Object.fromEntries(oredict)));
+	let oredict_inv = invertOredict(oredict);
+	fs.writeFileSync(`./public/data/${name}/oredict_inv.json`, JSON.stringify(Object.fromEntries(oredict_inv)));
 	console.log(`parsed ${oredict.size} oredict entries`);
 
 	let recipes = parseRecipes(fs.readFileSync(`./resources/${name}/recipes.json`).toString());
+	recipes = reduceRecipesOredict(recipes, oredict, oredict_inv);
 	fs.writeFileSync(`./public/data/${name}/recipes.json`, JSON.stringify(recipes));
 	console.log(`parsed ${recipes.length} recipes`);
 
@@ -51,7 +54,7 @@ function parseNames(names_str: string): Map<string, string> {
 	return names;
 }
 
-function parseOredict(oredict_str: string): Map<string, string[]> {
+function parseOredict(oredict_str: string, names: Map<string, string>): Map<string, string[]> {
 	let oredict: Map<string, string[]> = new Map();
 
 	let key = "";
@@ -69,7 +72,45 @@ function parseOredict(oredict_str: string): Map<string, string[]> {
 		}
 	}
 
+	// expand wildcards
+	for (let entry of oredict.values()) {
+		for (let id of entry) {
+			if (id?.includes(":*")) {
+				let prefix = id.replace(":*", "");
+				let valid_ids = [];
+				for (let i=0; i<100; i++) {
+					if (names.has(prefix + (i == 0 ? "" : `:${i}`))) {
+						valid_ids.push(prefix + `:${i}`);
+					}
+				}
+				entry.splice(entry.indexOf(id), 1, ...valid_ids);
+			}
+		}
+	}
+
+	// some manual fixes for the nomi dump
+	oredict.set("ore:stairWoodFix", ["minecraft:oak_stairs:0", "minecraft:spruce_stairs:0", "minecraft:birch_stairs:0", "minecraft:jungle_stairs:0", "minecraft:acacia_stairs:0", "minecraft:dark_oak_stairs:0", "gregtech:rubber_wood_stairs:0"]);
+	oredict.set("ore:blockQuartzFix", ["minecraft:quartz_block:0", "minecraft:quartz_block:1", "minecraft:quartz_block:2"]);
+	oredict.set("ore:gemCoalFix", ["minecraft:coal", "minecraft:coal:1"]);
+
 	return oredict;
+}
+
+function invertOredict(oredict: Map<string, string[]>): Map<string, string[]> {
+	let oredict_inv: Map<string, string[]> = new Map();
+
+	for (let [k, vs] of oredict) {
+		for (let v of vs) {
+			let prev = oredict_inv.get(v);
+			if (!prev) {
+				oredict_inv.set(v, [k]);
+			} else {
+				oredict_inv.set(v, [...prev, k]);
+			}
+		}
+	}
+
+	return oredict_inv;
 }
 
 type Stack = {
@@ -77,8 +118,13 @@ type Stack = {
 	count: number,
 };
 
+type Machine = {
+	id: string,
+};
+
 type Recipe = {
-	machine: string,
+	method: string,
+	machines: Machine[],
 	inputs: Stack[],
 	outputs: Stack[],
 };
@@ -87,18 +133,78 @@ function parseRecipes(recipes_str: string): Recipe[] {
 	let recipes: Recipe[] = [];
 
 	let raw_recipes = JSON.parse(recipes_str);
-	for (let machine of raw_recipes) {
-		for (let raw_recipe of machine.recipes) {
+	for (let method of raw_recipes) {
+		for (let raw_recipe of method.recipes) {
 			let recipe: Recipe = {
-				machine: machine?.id,
+				method: method?.id,
+				machines: method?.catalysts.map((m: any) => {return {id: m.name}}),
 				inputs: raw_recipe?.inputs.map((i: any) => {return {id: i.name, count: i.count}}),
 				outputs: raw_recipe?.outputs.map((o: any) => {return {id: o.name, count: o.count}}),
 			}
-
 			recipes.push(recipe);
 		}
 	}
 
+	return recipes;
+}
+
+// recipe dump contains oredict variants as subsequent inputs, replace with most specific and largest matching groups. 
+// mostly works but turns out not every variant is an oredict group, need to fix in dump mod itself
+function reduceRecipesOredict(recipes: Recipe[], oredict: Map<string, string[]>, oredict_inv: Map<string, string[]>): Recipe[] {
+	for (let recipe of recipes) {
+		let n = recipe.inputs.length;
+		let ores: string[] = [];
+
+		for (let i=0; i<n; i++) {
+			ores = [...new Set(ores.concat(oredict_inv.get(recipe.inputs[i].id) ?? []))];
+		}
+		let entries = ores.map(o => oredict.get(o) ?? []);
+		// (recipe as any).ores = ores;
+		// (recipe as any).entries = entries;
+
+		type Match = {
+			entry: string[],
+			ore: string,
+			index: number,
+			length: number,
+		};
+		let matches: Match[] = [];
+		for (let entry of entries) {
+			for (let i=0; i < recipe.inputs.length - entry.length + 1; i++) {
+				if(entry.every((e, j) => (e == recipe.inputs[i + j].id) || (e == recipe.inputs[i + j].id.replace(":0", "")) || (e == recipe.inputs[i + j].id.replace(/:\d+/, ":*")))) {
+					matches.push({
+						entry: entry,
+						ore: ores[entries.indexOf(entry)],
+						index: i,
+						length: entry.length,
+					});
+				}
+			}
+		}
+		// (recipe as any).matches = matches;
+		
+		// check for overlaps, pick longest match
+		for (let match1 of matches) {
+			for (let match2 of matches) {
+				if (match1 !== match2 && match1.index < match2.index + match2.length && match2.index < match1.index + match1.length) {
+					if (match1.length >= match2.length) {
+						match2.length = 0;
+					} else {
+						match1.length = 0;
+					}
+				}
+			}
+		}
+		matches = matches.filter(m => m.length != 0);
+
+		for (let match of matches) {
+			recipe.inputs[match.index].id = match.ore;
+			for (let j=1; j<match.length; j++) {
+				recipe.inputs[match.index+j].id = "";
+			}
+		}
+		recipe.inputs = recipe.inputs.filter(i => i.id != "");
+	}
 	return recipes;
 }
 
