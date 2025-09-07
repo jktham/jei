@@ -18,32 +18,12 @@ export class Recipes {
 		this.oredict_inv = oredict_inv;
 	}
 
-	searchR(id: string) {
-		console.log(id)
+	search(recipes: Map<string, string[]>, id: string) {
 		this.clearRecipes();
-		let keys = this.recipes_r.get(id) ?? [];
+		let keys = recipes.get(id) ?? [];
 		for (let entry of this.oredict_inv.get(id) ?? []) {
-			keys = keys.concat(this.recipes_r.get(entry) ?? []);
+			keys = keys.concat(recipes.get(entry) ?? []);
 		}
-		console.log(keys);
-		for (let key of keys) {
-			let i = Number(key.split(".")[0]);
-			let j = Number(key.split(".")[1]);
-			let process = this.processes[i].id;
-			let machines = this.processes[i].machines;
-			let inputs = this.processes[i].recipes[j].inputs;
-			let outputs = this.processes[i].recipes[j].outputs;
-			this.appendRecipe(process, machines, inputs, outputs);
-		}
-	}
-
-	searchU(id: string) {
-		this.clearRecipes();
-		let keys = this.recipes_u.get(id) ?? [];
-		for (let entry of this.oredict_inv.get(id) ?? []) {
-			keys = keys.concat(this.recipes_u.get(entry) ?? []);
-		}
-		console.log(keys);
 		for (let key of keys) {
 			let i = Number(key.split(".")[0]);
 			let j = Number(key.split(".")[1]);
@@ -67,44 +47,51 @@ export class Recipes {
 		let icon_element = document.createElement("img");
 		let arrow_element = document.createElement("div");
 		recipe_element.className = "recipe";
-		inputs_element.className = "inputs";
-		outputs_element.className = "outputs";
 		icon_element.className = "icon";
 		arrow_element.className = "arrow";
-		
-		for (let stack of inputs) {
-			let id = this.oredict.get(stack.id)?.[0] || stack.id;
-			let name = this.names.get(id) || stack.id;
-			let stack_element = document.createElement("img");
-			stack_element.className = "stack";
-			stack_element.src = `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
-			stack_element.title = `${name} (${id})`;
-			stack_element.loading = "lazy";
-			stack_element.onerror = () => stack_element.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
-			inputs_element.appendChild(stack_element);
-		}
-		for (let stack of outputs) {
-			let id = this.oredict.get(stack.id)?.[0] || stack.id;
-			let name = this.names.get(id) || stack.id;
-			let stack_element = document.createElement("img");
-			stack_element.className = "stack";
-			stack_element.src = `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
-			stack_element.title = `${name} (${id})`;
-			stack_element.loading = "lazy";
-			stack_element.onerror = () => stack_element.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
-			outputs_element.appendChild(stack_element);
-		}
+		inputs_element.className = "inputs";
+		outputs_element.className = "outputs";
 
 		icon_element.src = `/data/nomi_ceu_1.7.5_hm/icons/${machines[0]?.replaceAll(":", "__")}.png`;
 		icon_element.title = this.names.get(machines[0]) || machines[0] || process;
 		icon_element.loading = "lazy";
 		icon_element.onerror = () => icon_element.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
 		arrow_element.textContent = "🡒";
+		
+		this.appendStacks(inputs_element, inputs);
+		this.appendStacks(outputs_element, outputs);
+
+		recipe_element.onclick = () => console.log(process);
 
 		recipe_element.appendChild(icon_element);
 		recipe_element.appendChild(inputs_element);
 		recipe_element.appendChild(arrow_element);
 		recipe_element.appendChild(outputs_element);
 		this.recipes_element.appendChild(recipe_element);
+	}
+
+	appendStacks(parent_element: HTMLDivElement, stacks: Stack[]) {
+		let stacks_dedup: Stack[] = [...new Set(stacks.map(s => s.id))].map(id => {return {id: id, count: stacks.filter(s => s.id == id).map(s => s.count).reduce((c, acc) => acc + c, 0)}});
+		for (let stack of stacks_dedup) {
+			let id = this.oredict.get(stack.id)?.[0] || stack.id;
+			let name = this.names.get(id) || stack.id;
+
+			let stack_element = document.createElement("div");
+			let icon_element = document.createElement("img");
+			let count_element = document.createElement("span");
+			stack_element.className = "stack";
+			icon_element.className = "icon";
+			count_element.className = "count";
+
+			icon_element.src = `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
+			stack_element.title = `${name} (${id})`;
+			icon_element.loading = "lazy";
+			icon_element.onerror = () => icon_element.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
+			count_element.textContent = stack.count.toString();
+
+			stack_element.appendChild(icon_element);
+			stack_element.appendChild(count_element);
+			parent_element.appendChild(stack_element);
+		}
 	}
 }

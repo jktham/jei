@@ -58,12 +58,12 @@ export class Search {
 		icon_element.onerror = () => icon_element.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
 		result_element.onclick = () => {
 			this.clearResults();
-			this.recipes.searchR(id);
+			this.recipes.search(this.recipes.recipes_r, id);
 		};
 		result_element.oncontextmenu = (e) => {
 			e.preventDefault();
 			this.clearResults();
-			this.recipes.searchU(id);
+			this.recipes.search(this.recipes.recipes_u, id);
 		};
 
 		result_element.appendChild(icon_element);

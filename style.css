@@ -18,7 +18,17 @@ body {
 }
 
 #search {
-  appearance: none;
+  border: none;
+  outline: none;
+  background-color: #202020;
+  width: 20rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  margin-right: 0.5rem;
+}
+
+#packs {
   border: none;
   outline: none;
   background-color: #202020;
@@ -42,6 +52,7 @@ body {
   gap: 0.5rem;
   cursor: pointer;
   padding: 0.5rem;
+  min-width: fit-content;
 }
 
 #results .result:hover {
@@ -73,6 +84,7 @@ body {
   gap: 1rem;
   cursor: pointer;
   padding: 0.5rem;
+  min-width: fit-content;
 }
 
 #recipes .recipe:hover {
@@ -90,19 +102,41 @@ body {
   display: flex;
   flex-direction: row;
   align-items: center;
+  gap: 0.25rem;
 }
 
 #recipes .outputs {
   display: flex;
   flex-direction: row;
   align-items: center;
+  gap: 0.25rem;
 }
 
 #recipes .stack {
+  position: relative;
   width: 32px;
   height: 32px;
   min-width: 32px;
   min-height: 32px;
+}
+
+#recipes .stack .icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+#recipes .stack .count {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  max-width: 20px;
+  z-index: 1;
+  text-shadow: 1px 1px 2px black;
 }
 
 #recipes .arrow {
