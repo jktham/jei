@@ -1,12 +1,16 @@
+import type { Recipes } from "./recipes";
+
 export class Search {
-	input: HTMLInputElement = document.getElementById("search")! as HTMLInputElement;
-	results: HTMLDivElement = document.getElementById("results")! as HTMLDivElement;
+	input_element: HTMLInputElement = document.getElementById("search")! as HTMLInputElement;
+	results_element: HTMLDivElement = document.getElementById("results")! as HTMLDivElement;
 	names: Map<string, string>;
+	recipes: Recipes;
 
-	constructor(names: Map<string, string>) {
+	constructor(names: Map<string, string>, recipes: Recipes) {
 		this.names = names;
+		this.recipes = recipes;
 
-		this.input.addEventListener("keyup", (e) => {
+		this.input_element.addEventListener("keyup", (e) => {
 			if (e.key != "Enter") return;
 			this.search((e.target as HTMLInputElement).value);
 		});
@@ -14,6 +18,7 @@ export class Search {
 
 	search(query: string) {
 		this.clearResults();
+		this.recipes.clearRecipes();
 
 		let res: [string, string][] = [];
 		for (let [k, v] of this.names.entries()) {
@@ -32,8 +37,8 @@ export class Search {
 	}
 
 	clearResults() {
-		this.results.innerHTML = "";
-		this.results.scrollTop = 0;
+		this.results_element.innerHTML = "";
+		this.results_element.scrollTop = 0;
 	}
 
 	appendResult(id: string, name: string, icon: string) {
@@ -51,17 +56,20 @@ export class Search {
 		icon_element.src = icon;
 		icon_element.loading = "lazy";
 		icon_element.onerror = () => icon_element.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
-		result_element.onclick = () => this.selectResult(id);
+		result_element.onclick = () => {
+			this.clearResults();
+			this.recipes.searchR(id);
+		};
+		result_element.oncontextmenu = (e) => {
+			e.preventDefault();
+			this.clearResults();
+			this.recipes.searchU(id);
+		};
 
 		result_element.appendChild(icon_element);
 		result_element.appendChild(name_element);
 		result_element.appendChild(id_element);
-		this.results.appendChild(result_element);
-	}
-
-	selectResult(id: string) {
-		this.clearResults();
-		console.log(id);
+		this.results_element.appendChild(result_element);
 	}
 
 }

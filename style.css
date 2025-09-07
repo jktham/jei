@@ -25,14 +25,14 @@ body {
   width: 20rem;
   padding: 0.5rem;
   font-size: 1rem;
+  margin-bottom: 1rem;
 }
 
 #results {
   display: flex;
   flex-direction: column;
   max-height: 20rem;
-  overflow-y: auto;
-  margin-top: 1rem;
+  overflow: auto;
 }
 
 #results .result {
@@ -57,4 +57,54 @@ body {
 
 #results .id {
   color: #aaaaaa;
+}
+
+#recipes {
+  display: flex;
+  flex-direction: column;
+  max-height: 20rem;
+  overflow: auto;
+}
+
+#recipes .recipe {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+#recipes .recipe:hover {
+  background-color: #202020;
+}
+
+#recipes .icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+#recipes .inputs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+#recipes .outputs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+#recipes .stack {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+#recipes .arrow {
+  font-size: 2rem;
 }

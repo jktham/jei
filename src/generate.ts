@@ -29,10 +29,14 @@ async function generatePack(name: string) {
 	fs.writeFileSync(`./public/data/${name}/oredict_inv.json`, JSON.stringify([...oredict_inv.entries()]));
 	console.log(`parsed ${oredict.size} oredict entries`);
 
-	let recipes = parseRecipes(fs.readFileSync(`./resources/${name}/recipes.json`).toString());
-	recipes = reduceRecipesOredict(recipes, oredict, oredict_inv);
-	fs.writeFileSync(`./public/data/${name}/recipes.json`, JSON.stringify(recipes));
-	console.log(`parsed ${recipes.reduce((acc, r) => acc + r.recipes.length, 0)} recipes`);
+	let processes = parseProcesses(fs.readFileSync(`./resources/${name}/recipes.json`).toString());
+	processes = reduceProcessesOredict(processes, oredict, oredict_inv);
+	fs.writeFileSync(`./public/data/${name}/processes.json`, JSON.stringify(processes));
+	let recipes_r = generateRecipesR(processes);
+	fs.writeFileSync(`./public/data/${name}/recipes_r.json`, JSON.stringify([...recipes_r.entries()]));
+	let recipes_u = generateRecipesU(processes);
+	fs.writeFileSync(`./public/data/${name}/recipes_u.json`, JSON.stringify([...recipes_u.entries()]));
+	console.log(`parsed ${processes.reduce((acc, r) => acc + r.recipes.length, 0)} recipes`);
 
 	fs.cpSync(`./resources/${name}/icons`, `./public/data/${name}/icons`, {recursive: true});
 	console.log(`copied ${fs.readdirSync(`./public/data/${name}/icons`).length} icons`);
@@ -114,7 +118,6 @@ function parseOredict(oredict_str: string, names: Map<string, string>): Map<stri
 
 function invertOredict(oredict: Map<string, string[]>): Map<string, string[]> {
 	let oredict_inv: Map<string, string[]> = new Map();
-
 	for (let [k, vs] of oredict) {
 		for (let v of vs) {
 			let prev = oredict_inv.get(v);
@@ -125,49 +128,46 @@ function invertOredict(oredict: Map<string, string[]>): Map<string, string[]> {
 			}
 		}
 	}
-
 	return oredict_inv;
 }
 
-type Stack = {
+export type Stack = {
 	id: string,
 	count: number,
 };
 
-type Recipe = {
+export type Recipe = {
 	inputs: Stack[],
 	outputs: Stack[],
 };
 
-type Process = {
+export type Process = {
 	id: string,
 	machines: string[],
 	recipes: Recipe[],
 }
 
-function parseRecipes(recipes_str: string): Process[] {
-	let recipes: Process[] = [];
-
-	let raw_recipes = JSON.parse(recipes_str);
-	for (let process of raw_recipes) {
-		let recipe: Process = {
-			id: process?.id,
-			machines: process?.catalysts.map((m: any) => {return {id: m.name}}),
-			recipes: process?.recipes.map((r: any) => {return {
+function parseProcesses(processes_str: string): Process[] {
+	let processes: Process[] = [];
+	let raw_processes = JSON.parse(processes_str);
+	for (let raw_process of raw_processes) {
+		let process: Process = {
+			id: raw_process?.id,
+			machines: raw_process?.catalysts.map((m: any) => {return m.name}),
+			recipes: raw_process?.recipes.map((r: any) => {return {
 				inputs: r?.inputs.map((i: any) => {return {id: i.name, count: i.count}}),
 				outputs: r?.outputs.map((o: any) => {return {id: o.name, count: o.count}}),
 			}}),
 		}
-		recipes.push(recipe);
+		processes.push(process);
 	}
-
-	return recipes;
+	return processes;
 }
 
 // recipe dump contains oredict variants as subsequent inputs, replace with most specific and largest matching groups. 
 // mostly works but turns out not every variant is an oredict group, need to fix in dump mod itself
-function reduceRecipesOredict(recipes: Process[], oredict: Map<string, string[]>, oredict_inv: Map<string, string[]>): Process[] {
-	for (let process of recipes) {
+function reduceProcessesOredict(processes: Process[], oredict: Map<string, string[]>, oredict_inv: Map<string, string[]>): Process[] {
+	for (let process of processes) {
 		for (let recipe of process.recipes) {
 			let n = recipe.inputs.length;
 			let ores: string[] = [];
@@ -176,8 +176,6 @@ function reduceRecipesOredict(recipes: Process[], oredict: Map<string, string[]>
 				ores = [...new Set(ores.concat(oredict_inv.get(recipe.inputs[i].id) ?? []))];
 			}
 			let entries = ores.map(o => oredict.get(o) ?? []);
-			// (recipe as any).ores = ores;
-			// (recipe as any).entries = entries;
 
 			type Match = {
 				entry: string[],
@@ -198,7 +196,6 @@ function reduceRecipesOredict(recipes: Process[], oredict: Map<string, string[]>
 					}
 				}
 			}
-			// (recipe as any).matches = matches;
 			
 			// check for overlaps, pick longest match
 			for (let match1 of matches) {
@@ -223,7 +220,41 @@ function reduceRecipesOredict(recipes: Process[], oredict: Map<string, string[]>
 			recipe.inputs = recipe.inputs.filter(i => i.id != "");
 		}
 	}
-	return recipes;
+	return processes;
+}
+
+function generateRecipesR(processes: Process[]): Map<string, string[]> {
+	let recipes_r: Map<string, string[]> = new Map();
+	for (let [i, process] of processes.entries()) {
+		for (let [j, recipe] of process.recipes.entries()) {
+			for (let output of recipe.outputs) {
+				let prev = recipes_r.get(output.id);
+				if (!prev) {
+					recipes_r.set(output.id, [`${i}.${j}`]);
+				} else {
+					recipes_r.set(output.id, [...prev, `${i}.${j}`]);
+				}
+			}
+		}
+	}
+	return recipes_r;
+}
+
+function generateRecipesU(processes: Process[]): Map<string, string[]> {
+	let recipes_u: Map<string, string[]> = new Map();
+	for (let [i, process] of processes.entries()) {
+		for (let [j, recipe] of process.recipes.entries()) {
+			for (let input of recipe.inputs) {
+				let prev = recipes_u.get(input.id);
+				if (!prev) {
+					recipes_u.set(input.id, [`${i}.${j}`]);
+				} else {
+					recipes_u.set(input.id, [...prev, `${i}.${j}`]);
+				}
+			}
+		}
+	}
+	return recipes_u;
 }
 
 generate();
