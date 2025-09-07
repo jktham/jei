@@ -19,9 +19,11 @@ async function generatePack(name: string) {
 	if (fs.existsSync(`./public/data/${name}`)) fs.rmSync(`./public/data/${name}`, {recursive: true, force: true});
 	fs.mkdirSync(`./public/data/${name}`);
 
-	let names = parseNames(fs.readFileSync(`./resources/${name}/names.txt`).toString());
+	let items = parseItems(fs.readFileSync(`./resources/${name}/items.txt`).toString());
+	let fluids = parseFluids(fs.readFileSync(`./resources/${name}/fluids.txt`).toString());
+	let names = new Map([...items].concat([...fluids]));
 	fs.writeFileSync(`./public/data/${name}/names.json`, JSON.stringify([...names.entries()]));
-	console.log(`parsed ${names.size} item names`);
+	console.log(`parsed ${names.size} names`);
 
 	let oredict = parseOredict(fs.readFileSync(`./resources/${name}/oredict.txt`).toString(), names);
 	fs.writeFileSync(`./public/data/${name}/oredict.json`, JSON.stringify([...oredict.entries()]));
@@ -38,11 +40,11 @@ async function generatePack(name: string) {
 	fs.writeFileSync(`./public/data/${name}/recipes_u.json`, JSON.stringify([...recipes_u.entries()]));
 	console.log(`parsed ${processes.reduce((acc, r) => acc + r.recipes.length, 0)} recipes`);
 
-	fs.cpSync(`./resources/${name}/icons`, `./public/data/${name}/icons`, {recursive: true});
+	copyIcons(name);
 	console.log(`copied ${fs.readdirSync(`./public/data/${name}/icons`).length} icons`);
 }
 
-function parseNames(names_str: string): Map<string, string> {
+function parseItems(names_str: string): Map<string, string> {
 	let names: Map<string, string> = new Map();
 
 	for (let line of names_str.split(/\r?\n/)) {
@@ -61,6 +63,28 @@ function parseNames(names_str: string): Map<string, string> {
 	}
 
 	return names;
+}
+
+function parseFluids(fluids_str: string): Map<string, string> {
+	let fluids: Map<string, string> = new Map();
+
+	let id = "";
+	for (let line of fluids_str.split(/\r?\n/)) {
+		if (line.startsWith("<liquid:")) {
+			id = line.replace("<liquid:", "fluid:").replace(">", "");
+		}
+		if (line.startsWith("- Display Name: ")) {
+			let display = line.replace("- Display Name: ", "");
+
+			if (id && display) {
+				fluids.set(id, display);
+			}
+
+			id = "";
+		}
+	}
+
+	return fluids;
 }
 
 function parseOredict(oredict_str: string, names: Map<string, string>): Map<string, string[]> {
@@ -155,8 +179,8 @@ function parseProcesses(processes_str: string): Process[] {
 			id: raw_process?.id,
 			machines: raw_process?.catalysts.map((m: any) => {return m.name}),
 			recipes: raw_process?.recipes.map((r: any) => {return {
-				inputs: r?.inputs.map((i: any) => {return {id: i.name, count: i.count}}),
-				outputs: r?.outputs.map((o: any) => {return {id: o.name, count: o.count}}),
+				inputs: r?.inputs.map((s: any) => {return {id: s.type == "fluid" ? `fluid:${s.name}` : s.name, count: s.count}}),
+				outputs: r?.outputs.map((s: any) => {return {id: s.type == "fluid" ? `fluid:${s.name}` : s.name, count: s.count}}),
 			}}),
 		}
 		processes.push(process);
@@ -255,6 +279,20 @@ function generateRecipesU(processes: Process[]): Map<string, string[]> {
 		}
 	}
 	return recipes_u;
+}
+
+function copyIcons(name: string) {
+	fs.cpSync(`./resources/${name}/icons`, `./public/data/${name}/icons`, {recursive: true});
+	let icons = fs.readdirSync(`./public/data/${name}/icons`);
+	for (let icon of icons) {
+		if (icon.endsWith(".txt")) {
+			fs.rmSync(`./public/data/${name}/icons/${icon}`);
+		} else {
+			let split = icon.replace(".png", "").split("__");
+			let new_icon = split.length > 3 ? `${split[0]}__${split[1]}__${split[2]}.png` : icon;
+			fs.renameSync(`./public/data/${name}/icons/${icon}`, `./public/data/${name}/icons/${new_icon}`);
+		}
+	}
 }
 
 generate();

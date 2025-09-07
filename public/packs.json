@@ -1,4 +1,7 @@
 [{
 	"name": "Nomifactory CEu 1.7.5 Hard Mode",
 	"path": "/data/nomi_ceu_1.7.5_hm"
+}, {
+	"name": "Nomifactory CEu 1.7.5 Normal Mode",
+	"path": "/data/nomi_ceu_1.7.5_nm"
 }]

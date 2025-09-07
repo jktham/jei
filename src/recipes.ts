@@ -83,8 +83,15 @@ export class Recipes {
 			icon_element.className = "icon";
 			count_element.className = "count";
 
-			icon_element.src = `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
 			stack_element.title = `${name} (${id})`;
+			stack_element.onclick = () => {
+				this.search(this.recipes_r, id);
+			};
+			stack_element.oncontextmenu = (e) => {
+				e.preventDefault();
+				this.search(this.recipes_u, id);
+			};
+			icon_element.src = `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
 			icon_element.loading = "lazy";
 			icon_element.onerror = () => icon_element.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
 			count_element.textContent = stack.count.toString();
