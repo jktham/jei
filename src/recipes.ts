@@ -19,6 +19,25 @@ export class Recipes {
 	}
 
 	search(recipes: Map<string, string[]>, id: string) {
+		let url = new URL(window.location.toString());
+		url.searchParams.delete("search");
+		if (recipes == this.recipes_r) {
+			url.searchParams.delete("uses");
+			if (id != url.searchParams.get("recipes")) {
+				url.searchParams.set("recipes", id);
+				history.pushState(null, "", url);
+			}
+			document.title = `jei recipes ${id}`;
+			
+		} else if (recipes == this.recipes_u) {
+			url.searchParams.delete("recipes");
+			if (id != url.searchParams.get("uses")) {
+				url.searchParams.set("uses", id);
+				history.pushState(null, "", url);
+			}
+			document.title = `jei uses ${id}`;
+		}
+
 		this.clearRecipes();
 		let keys = recipes.get(id) ?? [];
 		for (let entry of this.oredict_inv.get(id) ?? []) {

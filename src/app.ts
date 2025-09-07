@@ -25,20 +25,55 @@ export class App {
 	constructor() {
 		this.packs_element.addEventListener("change", async (e) => {
 			let path = (e.target as HTMLSelectElement).value;
+			let url = new URL(window.location.toString());
+			if (path != url.searchParams.get("pack")) {
+				url.searchParams.set("pack", path);
+				history.pushState(null, "", url);
+			}
+
 			this.recipes?.clearRecipes();
 			this.search?.clearResults();
-			await this.loadPack(path);
-			this.recipes = new Recipes(this.names, this.processes, this.recipes_r, this.recipes_u, this.oredict, this.oredict_inv);
-			this.search = new Search(this.names, this.recipes);
+			await this.load();
+			await this.processQueryParams();
 		})
 	}
 
 	async init() {
 		await this.getPacks();
-		await this.loadPack(this.packs_element.value);
+		await this.load();
+	}
 
+	async load() {
+		await this.loadPack(this.packs_element.value);
 		this.recipes = new Recipes(this.names, this.processes, this.recipes_r, this.recipes_u, this.oredict, this.oredict_inv);
 		this.search = new Search(this.names, this.recipes);
+	}
+
+	async processQueryParams() {
+		let url = new URL(window.location.toString());
+		let pack = url.searchParams.get("pack");
+		let search = url.searchParams.get("search");
+		let recipes = url.searchParams.get("recipes");
+		let uses = url.searchParams.get("uses");
+
+		if (pack) {
+			if (pack != this.packs_element.value) {
+				this.packs_element.value = pack;
+				this.recipes?.clearRecipes();
+				this.search?.clearResults();
+				await this.load();
+			}
+		}
+		if (search) {
+			this.search.input_element.value = search;
+			this.search.search(search); // lol
+		} else if (recipes) {
+			this.search.clearResults();
+			this.recipes.search(this.recipes.recipes_r, recipes);
+		} else if (uses) {
+			this.search.clearResults();
+			this.recipes.search(this.recipes.recipes_u, uses);
+		}
 	}
 
 	async getPacks() {

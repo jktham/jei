@@ -17,6 +17,16 @@ export class Search {
 	}
 
 	search(query: string) {
+		if (!query) return;
+		let url = new URL(window.location.toString());
+		url.searchParams.delete("recipes");
+		url.searchParams.delete("uses");
+		if (query != url.searchParams.get("search")) {
+			url.searchParams.set("search", query);
+			history.pushState(null, "", url);
+		}
+		document.title = `jei search ${query}`;
+
 		this.clearResults();
 		this.recipes.clearRecipes();
 
