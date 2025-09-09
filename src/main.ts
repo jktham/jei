@@ -1,8 +1,3 @@
-import { App } from "./app";
+import { init } from "./app";
 
-async function main() {
-	let app = new App();
-	await app.init();
-}
-
-main();
+await init();

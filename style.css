@@ -53,7 +53,7 @@ body {
   overflow: auto;
 }
 
-#results .result {
+#results .item {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -63,7 +63,7 @@ body {
   min-width: fit-content;
 }
 
-#results .result:hover {
+#results .item:hover {
   background-color: #202020;
 }
 
@@ -78,14 +78,7 @@ body {
   color: #aaaaaa;
 }
 
-#recipes {
-  display: flex;
-  flex-direction: column;
-  max-height: 20rem;
-  overflow: auto;
-}
-
-#recipes .recipe {
+#results .recipe {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -94,28 +87,21 @@ body {
   min-width: fit-content;
 }
 
-#recipes .icon {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
-}
-
-#recipes .inputs {
+#results .recipe .inputs {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
 }
 
-#recipes .outputs {
+#results .recipe .outputs {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
 }
 
-#recipes .stack {
+#results .stack {
   position: relative;
   width: 32px;
   height: 32px;
@@ -124,11 +110,11 @@ body {
   cursor: pointer;
 }
 
-#recipes .stack:hover {
+#results .stack:hover {
   background-color: #202020;
 }
 
-#recipes .stack .icon {
+#results .stack .icon {
   position: absolute;
   top: 0;
   left: 0;
@@ -138,7 +124,7 @@ body {
   min-height: 32px;
 }
 
-#recipes .stack .count {
+#results .stack .count {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -147,6 +133,6 @@ body {
   text-shadow: 1px 1px 2px black;
 }
 
-#recipes .arrow {
+#results .arrow {
   font-size: 2rem;
 }
