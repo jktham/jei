@@ -12,14 +12,26 @@ export function searchItems(query: string) {
 	pushHistory("item", query);
 
 	let res: [string, string][] = [];
-	for (let [k, v] of names.entries()) {
-		if (k.toLowerCase().includes(query) || v.toLowerCase().includes(query)) {
-			res.push([k, v]);
+	for (let [id, display] of names.entries()) {
+		if (id.toLowerCase().includes(query) || display.toLowerCase().includes(query)) {
+			res.push([id, display]);
 		}
 	}
+	
+	res = res.filter(([id, _]) => {
+		let recipes = recipes_r.get(id) ?? [];
+		for (let entry of oredict_inv.get(id) ?? []) {
+			recipes = recipes.concat(recipes_r.get(entry) ?? []);
+		}
+		let uses = recipes_u.get(id) ?? [];
+		for (let entry of oredict_inv.get(id) ?? []) {
+			uses = uses.concat(recipes_u.get(entry) ?? []);
+		}
+		return !(recipes.length == 0 && uses.length == 0) // item unused
+	});
 
-	for (let r of res) {
-		results_div.appendChild(createItemResult(r[0], r[1], `/data/nomi_ceu_1.7.5_hm/icons/${r[0].replaceAll(":", "__")}.png`));
+	for (let [id, display] of res) {
+		results_div.appendChild(createItemResult(id, display, `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`));
 	}
 	if (res.length == 0) {
 		results_div.appendChild(createItemResult(query, ":(", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png"));
@@ -104,11 +116,11 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 	let inputs_div = document.createElement("div");
 	let outputs_div = document.createElement("div");
 	let icon_img = document.createElement("img");
-	let arrow_div = document.createElement("div");
+	let arrow_span = document.createElement("div");
 
 	recipe_div.className = "recipe";
 	icon_img.className = "icon";
-	arrow_div.className = "arrow";
+	arrow_span.className = "arrow material-symbols-outlined";
 	inputs_div.className = "inputs";
 	outputs_div.className = "outputs";
 
@@ -116,7 +128,7 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 	icon_img.title = names.get(machines[0]) || machines[0] || process;
 	icon_img.loading = "lazy";
 	icon_img.onerror = () => icon_img.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
-	arrow_div.textContent = "🡒";
+	arrow_span.textContent = "arrow_forward";
 	
 	let dedup_inputs = dedupStacks(inputs);
 	let dedup_outputs = dedupStacks(outputs);
@@ -127,7 +139,7 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 
 	recipe_div.appendChild(icon_img);
 	recipe_div.appendChild(inputs_div);
-	recipe_div.appendChild(arrow_div);
+	recipe_div.appendChild(arrow_span);
 	recipe_div.appendChild(outputs_div);
 	return recipe_div;
 }

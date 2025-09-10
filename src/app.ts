@@ -57,7 +57,6 @@ forward_button.addEventListener("click", () => {
 	historyForward();
 })
 
-
 export async function init() {
 	search_input.value = "";
 	updateHistoryButtons();
@@ -100,10 +99,8 @@ export function pushHistory(type: PageType, query: string) {
 	if (history.index != history.pages.length-1) { // pushed in middle of history
 		history.pages = history.pages.slice(0, history.index + 1);
 	}
-
 	history.pages.push(page);
 	history.index += 1;
-	console.log(history);
 
 	updateHistoryButtons();
 }
@@ -120,8 +117,6 @@ export function historyForward() {
 
 function historyGo(index: number) {
 	let page = history.pages[index];
-	console.log(history);
-
 	if (page.type == "item") {
 		searchItems(page.query);
 	} else if (page.type == "recipe") {
@@ -129,7 +124,6 @@ function historyGo(index: number) {
 	} else if (page.type == "use") {
 		searchUses(page.query);
 	}
-
 	updateHistoryButtons();
 }
 
