@@ -1,4 +1,4 @@
-import { names, oredict, oredict_inv, processes, recipes_r, recipes_u, results_div, status_span } from "./app";
+import { names, oredict, oredict_inv, processes, pushHistory, recipes_r, recipes_u, results_div, status_span } from "./app";
 import type { Stack } from "./generate";
 
 export function clearResults() {
@@ -7,8 +7,9 @@ export function clearResults() {
 }
 
 export function searchItems(query: string) {
-	if (!query) return;
 	clearResults();
+	if (!query) return;
+	pushHistory("item", query);
 
 	let res: [string, string][] = [];
 	for (let [k, v] of names.entries()) {
@@ -28,6 +29,8 @@ export function searchItems(query: string) {
 
 export function searchRecipes(id: string) {
 	clearResults();
+	pushHistory("recipe", id);
+
 	let res = recipes_r.get(id) ?? [];
 	for (let entry of oredict_inv.get(id) ?? []) {
 		res = res.concat(recipes_r.get(entry) ?? []);
@@ -46,6 +49,8 @@ export function searchRecipes(id: string) {
 
 export function searchUses(id: string) {
 	clearResults();
+	pushHistory("use", id);
+
 	let res = recipes_u.get(id) ?? [];
 	for (let entry of oredict_inv.get(id) ?? []) {
 		res = res.concat(recipes_u.get(entry) ?? []);
