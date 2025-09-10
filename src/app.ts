@@ -45,6 +45,7 @@ search_input.addEventListener("keyup", (e) => {
 packs_select.addEventListener("change", async () => {
 	clearResults();
 	await loadPack(packs_select.value);
+	localStorage.setItem("pack", packs_select.value);
 	historyGo(history.index);
 })
 
@@ -58,8 +59,11 @@ forward_button.addEventListener("click", () => {
 
 
 export async function init() {
+	search_input.value = "";
 	updateHistoryButtons();
 	await getPacks();
+	let pack = localStorage.getItem("pack");
+	if (pack) packs_select.value = pack;
 	await loadPack(packs_select.value);
 }
 
