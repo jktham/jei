@@ -124,13 +124,21 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 	inputs_div.className = "inputs";
 	outputs_div.className = "outputs";
 
-	icon_img.src = `/data/nomi_ceu_1.7.5_hm/icons/${machines[0]?.replaceAll(":", "__")}.png`;
+	let icon_overrides: Map<string, string> = new Map([
+		["gregtech:material_tree", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
+		["jeresources.mob", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__skull__2.png"],
+		["jeresources.dungeon", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__chest__0.png"],
+		["jeresources.villager", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__emerald__0.png"],
+	]);
+	icon_img.src = icon_overrides.get(machines[0] || process) || `/data/nomi_ceu_1.7.5_hm/icons/${machines[0]?.replaceAll(":", "__")}.png`;
 	icon_img.title = names.get(machines[0]) || machines[0] || process;
 	icon_img.loading = "lazy";
 	icon_img.onerror = () => icon_img.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
 	arrow_span.textContent = "arrow_forward";
 	
 	let dedup_inputs = dedupStacks(inputs);
+	if (process == "gregtech:material_tree") dedup_inputs = [];
+	if (dedup_inputs.length == 0) inputs_div.style.display = "none";
 	let dedup_outputs = dedupStacks(outputs);
 	dedup_inputs.map(stack => inputs_div.appendChild(createStack(stack)));
 	dedup_outputs.map(stack => outputs_div.appendChild(createStack(stack)));
@@ -145,7 +153,7 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 }
 
 function dedupStacks(stacks: Stack[]): Stack[] {
-	return [...new Set(stacks.map(s => s.id))].map(id => {return {id: id, count: stacks.filter(s => s.id == id).map(s => s.count).reduce((c, acc) => acc + c, 0)}});
+	return [...new Set(stacks.map(s => s.id))].map(id => {return {id: id, count: stacks.filter(s => s.id == id).map(s => s.count).reduce((c, acc) => acc + c, 0)}}).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export function createStack(stack: Stack) {
