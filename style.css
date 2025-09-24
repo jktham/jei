@@ -43,7 +43,10 @@ select {
   border: none;
   outline: none;
   background-color: #202020;
-  min-width: 20rem;
+  width: 20rem;
+  max-width: 20rem;
+  min-width: 5rem;
+  flex: 1 1 5rem;
   padding: 0.5rem;
   font-size: 1rem;
   height: 1.5rem;
@@ -54,7 +57,10 @@ select {
   border: none;
   outline: none;
   background-color: #202020;
-  min-width: 20rem;
+  width: 20rem;
+  max-width: 20rem;
+  min-width: 5rem;
+  flex: 1 1 5rem;
   padding: 0.5rem;
   font-size: 1rem;
   height: 1.5rem;
@@ -69,7 +75,7 @@ select {
   height: 0;
 }
 
-#back, #forward {
+#back, #forward, #close {
   box-sizing: content-box;
   border: none;
   outline: none;
@@ -79,8 +85,12 @@ select {
   height: 1.5rem;
 }
 
-#back:active, #forward:active {
+#back:active, #forward:active, #close:active {
   background-color: #303030;
+}
+
+#close {
+  margin-left: auto;
 }
 
 #results {

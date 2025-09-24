@@ -36,10 +36,12 @@ export let packs_select: HTMLSelectElement = document.getElementById("packs")! a
 export let status_span: HTMLSpanElement = document.getElementById("status")! as HTMLSpanElement;
 export let back_button: HTMLButtonElement = document.getElementById("back")! as HTMLButtonElement;
 export let forward_button: HTMLButtonElement = document.getElementById("forward")! as HTMLButtonElement;
+export let close_button: HTMLButtonElement = document.getElementById("close")! as HTMLButtonElement;
 
 search_input.addEventListener("keyup", (e) => {
 	if (e.key != "Enter") return;
 	searchItems((e.target as HTMLInputElement).value);
+	close_button.disabled = false;
 });
 
 packs_select.addEventListener("change", async () => {
@@ -55,6 +57,11 @@ back_button.addEventListener("click", () => {
 
 forward_button.addEventListener("click", () => {
 	historyForward();
+})
+
+close_button.addEventListener("click", () => {
+	clearResults();
+	close_button.disabled = true;
 })
 
 export async function init() {
@@ -130,4 +137,5 @@ function historyGo(index: number) {
 function updateHistoryButtons() {
 	back_button.disabled = history.index <= 1;
 	forward_button.disabled = history.index >= history.pages.length - 1;
+	close_button.disabled = results_div.children.length == 0;
 }

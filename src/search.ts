@@ -9,7 +9,6 @@ export function clearResults() {
 export function searchItems(query: string) {
 	clearResults();
 	if (!query) return;
-	pushHistory("item", query);
 
 	let res: [string, string][] = [];
 	for (let [id, display] of names.entries()) {
@@ -37,11 +36,11 @@ export function searchItems(query: string) {
 		results_div.appendChild(createItemResult(query, ":(", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png"));
 	}
 	status_span.textContent = `found ${res.length} items`;
+	pushHistory("item", query);
 }
 
 export function searchRecipes(id: string) {
 	clearResults();
-	pushHistory("recipe", id);
 
 	let res = recipes_r.get(id) ?? [];
 	for (let entry of oredict_inv.get(id) ?? []) {
@@ -57,11 +56,11 @@ export function searchRecipes(id: string) {
 		results_div.appendChild(createRecipeResult(process, machines, inputs, outputs));
 	}
 	status_span.textContent = `found ${res.length} recipes`;
+	pushHistory("recipe", id);
 }
 
 export function searchUses(id: string) {
 	clearResults();
-	pushHistory("use", id);
 
 	let res = recipes_u.get(id) ?? [];
 	for (let entry of oredict_inv.get(id) ?? []) {
@@ -77,6 +76,7 @@ export function searchUses(id: string) {
 		results_div.appendChild(createRecipeResult(process, machines, inputs, outputs));
 	}
 	status_span.textContent = `found ${res.length} uses`;
+	pushHistory("use", id);
 }
 
 export function createItemResult(id: string, name: string, icon: string): HTMLDivElement {
@@ -129,6 +129,8 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 		["jeresources.mob", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__skull__2.png"],
 		["jeresources.dungeon", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__chest__0.png"],
 		["jeresources.villager", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__emerald__0.png"],
+		["jei.information", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__writable_book__0.png"],
+		["gregtech:circuit.integrated", "/data/nomi_ceu_1.7.5_hm/icons/gregtech__meta_item_1__461.png"],
 	]);
 	icon_img.src = icon_overrides.get(machines[0] || process) || `/data/nomi_ceu_1.7.5_hm/icons/${machines[0]?.replaceAll(":", "__")}.png`;
 	icon_img.title = names.get(machines[0]) || machines[0] || process;
