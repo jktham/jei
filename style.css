@@ -1,26 +1,26 @@
 :root {
-  font-family: Roboto, Helvetica, Arial, sans-serif;
+	font-family: Roboto, Helvetica, Arial, sans-serif;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 1);
-  background-color: #101010;
+	color-scheme: light dark;
+	color: rgba(255, 255, 255, 1);
+	background-color: #101010;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 * {
-  user-select: none;
+	user-select: none;
 }
 
 body {
-  margin: 0;
-  padding: 1rem;
-  height: calc(100dvh - 2rem);
-  display: flex;
-  flex-direction: column;
+	margin: 0;
+	padding: 1rem;
+	height: calc(100dvh - 2rem);
+	display: flex;
+	flex-direction: column;
 }
 
 select {
@@ -36,198 +36,213 @@ select {
 }
 
 #navbar {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  margin-bottom: 1rem;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 0.25rem 0.5rem;
+	margin-bottom: 1rem;
 }
 
 #search {
-  border: none;
-  outline: none;
-  background-color: #202020;
-  width: 20rem;
-  max-width: 20rem;
-  min-width: 5rem;
-  flex: 1 1 5rem;
-  padding: 0.5rem;
-  font-size: 1rem;
-  height: 1.5rem;
+	border: none;
+	outline: none;
+	background-color: #202020;
+	width: 20rem;
+	max-width: 20rem;
+	min-width: 5rem;
+	flex: 1 1 5rem;
+	padding: 0.5rem;
+	font-size: 1rem;
+	height: 1.5rem;
 }
 
 #packs {
-  box-sizing: content-box;
-  border: none;
-  outline: none;
-  background-color: #202020;
-  width: 20rem;
-  max-width: 20rem;
-  min-width: 5rem;
-  flex: 1 1 5rem;
-  padding: 0.5rem;
-  font-size: 1rem;
-  height: 1.5rem;
+	box-sizing: content-box;
+	border: none;
+	outline: none;
+	background-color: #202020;
+	width: 20rem;
+	max-width: 20rem;
+	min-width: 5rem;
+	flex: 1 1 5rem;
+	padding: 0.5rem;
+	font-size: 1rem;
+	height: 1.5rem;
 }
 
 #status {
-  margin-right: auto;
+	margin-right: auto;
 }
 
 #navbar .linebreak {
-  width: 100%;
-  height: 0;
+	width: 100%;
+	height: 0;
 }
 
 button {
-  box-sizing: content-box;
-  border: none;
-  outline: none;
-  background-color: #202020;
-  padding: 0.5rem;
-  font-size: 1rem;
-  height: 1.5rem;
+	box-sizing: content-box;
+	border: none;
+	outline: none;
+	background-color: #202020;
+	padding: 0.5rem;
+	font-size: 1rem;
+	height: 1.5rem;
 }
 
 button:active {
-  background-color: #303030;
+	background-color: #303030;
 }
 
 #close {
-  margin-left: auto;
+	margin-left: auto;
 }
 
 #main {
-  position: relative;
-  height: 100%;
+	position: relative;
+	height: 100%;
 }
 
 #results {
-  display: flex;
-  position: relative;
-  flex-direction: column;
-  max-height: 20rem;
-  overflow: auto;
-  z-index: 1;
-  background-color: #101010;
+	display: flex;
+	position: relative;
+	flex-direction: column;
+	max-height: 20rem;
+	overflow: auto;
+	z-index: 1;
+	background-color: #101010;
 }
 
 #results .item {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  min-width: fit-content;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	padding: 0.5rem;
+	min-width: fit-content;
 }
 
 #results .item:hover {
-  background-color: #202020;
+	background-color: #202020;
 }
 
 #results .icon {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
 }
 
 #results .id {
-  color: #aaaaaa;
+	color: #aaaaaa;
 }
 
 #results .recipe {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem;
-  min-width: fit-content;
-}
-
-#results .recipe .inputs {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-#results .recipe .outputs {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.5rem;
+	min-width: fit-content;
 }
 
 #results .add {
-  margin-left: auto;
+	margin-left: auto;
+}
+
+.stacks {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 0.5rem;
 }
 
 .stack {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
-  cursor: pointer;
+	position: relative;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
+	cursor: pointer;
 }
 
 .stack:hover {
-  background-color: #202020;
+	background-color: #303030;
 }
 
 .stack .icon {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
 }
 
 .stack .count {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  max-width: 30px;
-  text-shadow: 1px 1px 2px black;
-}
-
-#results .arrow {
-  /* font-size: 2rem; */
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	max-width: 30px;
+	text-shadow: 1px 1px 2px black;
 }
 
 #chart {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-}
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
 
-#chart .node {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  user-select: none;
-}
+	.node {
+		position: absolute;
+		display: flex;
+		flex-direction: row;
+		overflow: hidden;
+		user-select: none;
+		gap: 0.5rem;
 
-#chart .node .inputs {
-  display: flex;
-  flex-wrap: nowrap;
-}
+		.bar {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
 
-#chart .node .outputs {
-  display: flex;
-  flex-wrap: nowrap;
-}
+			.move, .delete {
+				background-color: #202020;
+				color: #dddddd;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 0.5rem;
+				height: 1rem;
+				width: 1rem;
+				font-weight: 200;
 
-#chart .node .machine {
-  display: flex;
-  flex-wrap: nowrap;
+				&:active {
+					background-color: #303030;
+				}
+			}
+
+			.move {
+				cursor: grab;
+				&:active {
+					cursor: grabbing;
+				}
+			}
+		}
+
+		.content {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+
+			.stacks {
+				display: flex;
+				flex-wrap: nowrap;
+			}
+		}
+	}
 }
