@@ -1,9 +1,11 @@
-import { names, oredict, oredict_inv, processes, pushHistory, recipes_r, recipes_u, results_div, status_span } from "./app";
+import { close_button, names, oredict, oredict_inv, processes, pushHistory, recipes_r, recipes_u, results_div, status_span } from "./app";
+import { addNode } from "./chart";
 import type { Stack } from "./generate";
 
 export function clearResults() {
 	results_div.innerHTML = "";
 	results_div.scrollTop = 0;
+	close_button.disabled = true;
 }
 
 export function searchItems(query: string) {
@@ -117,12 +119,14 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 	let outputs_div = document.createElement("div");
 	let icon_img = document.createElement("img");
 	let arrow_span = document.createElement("div");
+	let add_button = document.createElement("button");
 
 	recipe_div.className = "recipe";
 	icon_img.className = "icon";
 	arrow_span.className = "arrow material-symbols-outlined";
 	inputs_div.className = "inputs";
 	outputs_div.className = "outputs";
+	add_button.className = "add";
 
 	let icon_overrides: Map<string, string> = new Map([
 		["gregtech:material_tree", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
@@ -145,12 +149,14 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 	dedup_inputs.map(stack => inputs_div.appendChild(createStack(stack)));
 	dedup_outputs.map(stack => outputs_div.appendChild(createStack(stack)));
 
-	recipe_div.onclick = () => console.log(process);
+	add_button.innerHTML = "<span class=\"material-symbols-outlined\">add</span>";
+	add_button.onclick = () => {addNode(machines[0], dedup_inputs, dedup_outputs); clearResults()};
 
 	recipe_div.appendChild(icon_img);
 	recipe_div.appendChild(inputs_div);
 	recipe_div.appendChild(arrow_span);
 	recipe_div.appendChild(outputs_div);
+	recipe_div.appendChild(add_button);
 	return recipe_div;
 }
 

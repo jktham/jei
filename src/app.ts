@@ -32,6 +32,7 @@ export let history: History = {
 
 export let search_input: HTMLInputElement = document.getElementById("search")! as HTMLInputElement;
 export let results_div: HTMLDivElement = document.getElementById("results")! as HTMLDivElement;
+export let chart_div: HTMLDivElement = document.getElementById("chart")! as HTMLDivElement;
 export let packs_select: HTMLSelectElement = document.getElementById("packs")! as HTMLSelectElement;
 export let status_span: HTMLSpanElement = document.getElementById("status")! as HTMLSpanElement;
 export let back_button: HTMLButtonElement = document.getElementById("back")! as HTMLButtonElement;
