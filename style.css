@@ -11,6 +11,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  user-select: none;
+}
+
 body {
   margin: 0;
   padding: 1rem;

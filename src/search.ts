@@ -97,6 +97,7 @@ export function createItemResult(id: string, name: string, icon: string): HTMLDi
 	icon_img.src = icon;
 	icon_img.loading = "lazy";
 	icon_img.onerror = () => icon_img.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
+	icon_img.draggable = false;
 	item_div.onclick = () => {
 		clearResults();
 		searchRecipes(id);
@@ -140,6 +141,7 @@ export function createRecipeResult(process: string, machines: string[], inputs: 
 	icon_img.title = names.get(machines[0]) || machines[0] || process;
 	icon_img.loading = "lazy";
 	icon_img.onerror = () => icon_img.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
+	icon_img.draggable = false;
 	arrow_span.textContent = "arrow_forward";
 	
 	let dedup_inputs = dedupStacks(inputs);
@@ -187,6 +189,7 @@ export function createStack(stack: Stack) {
 	icon_img.src = `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
 	icon_img.loading = "lazy";
 	icon_img.onerror = () => icon_img.src = "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png";
+	icon_img.draggable = false;
 	count_span.textContent = stack.count.toString();
 
 	stack_div.appendChild(icon_img);
