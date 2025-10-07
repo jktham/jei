@@ -38,6 +38,14 @@ export let status_span: HTMLSpanElement = document.getElementById("status")! as 
 export let back_button: HTMLButtonElement = document.getElementById("back")! as HTMLButtonElement;
 export let forward_button: HTMLButtonElement = document.getElementById("forward")! as HTMLButtonElement;
 export let close_button: HTMLButtonElement = document.getElementById("close")! as HTMLButtonElement;
+export let chart_svg: SVGElement = document.getElementById("chart_svg")! as unknown as SVGElement;
+
+export type ActiveStack = {
+	el: HTMLDivElement | undefined,
+	id: string,
+	type: "input" | "output" | "",
+};
+export let active_stacks: ActiveStack[] = [{el: undefined, id: "", type: ""}, {el: undefined, id: "", type: ""}];
 
 search_input.addEventListener("keyup", (e) => {
 	if (e.key != "Enter") return;

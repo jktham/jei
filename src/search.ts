@@ -1,4 +1,4 @@
-import { close_button, names, oredict_inv, processes, pushHistory, recipes_r, recipes_u, results_div, status_span } from "./app";
+import { active_stacks, close_button, names, oredict_inv, processes, pushHistory, recipes_r, recipes_u, results_div, status_span } from "./app";
 import { addNode } from "./chart";
 import type { Stack } from "./generate";
 import { createStackElement, createSymbol, dedupStacks, getRich, imgFallback } from "./util";
@@ -132,19 +132,21 @@ export function createRecipeResultElement(process: string, machines: string[], i
 	// let machines_rich = dedupStacks(machines.map(machine => {return {id: machine || process, count: 0}})).map(stack => getRich(stack));
 	// machines_rich.map(stack => machines_div.appendChild(createStackElement(stack)));
 	let machines_rich = [getRich({id: machines[0] || process, count: 0})];
-	machines_div.appendChild(createStackElement(machines_rich[0]));
+	machines_div.appendChild(createStackElement(machines_rich[0], false));
 
 	let inputs_rich = dedupStacks(inputs).map(stack => getRich(stack));
 	let outputs_rich = dedupStacks(outputs).map(stack => getRich(stack));
 
 	if (process == "gregtech:material_tree") inputs_div.style.display = "none";
-	inputs_rich.map(stack => inputs_div.appendChild(createStackElement(stack)));
-	outputs_rich.map(stack => outputs_div.appendChild(createStackElement(stack)));
+	inputs_rich.map(stack => inputs_div.appendChild(createStackElement(stack, false)));
+	outputs_rich.map(stack => outputs_div.appendChild(createStackElement(stack, false)));
 
-	add_button.innerHTML = "<span class=\"material-symbols-outlined\">add</span>";
+	add_button.appendChild(createSymbol("add"));
 	add_button.onclick = () => {
-		addNode(machines_rich[0], inputs_rich, outputs_rich, undefined);
-		clearResults()
+		clearResults();
+		addNode(machines_rich[0], inputs_rich, outputs_rich);
+		active_stacks[0] = {el: undefined, id: "", type: ""};
+		active_stacks[1] = {el: undefined, id: "", type: ""};
 	};
 
 	recipe_div.appendChild(machines_div);

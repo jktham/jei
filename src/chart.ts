@@ -1,10 +1,10 @@
-import { chart_div } from "./app";
+import { active_stacks, chart_div, chart_svg } from "./app";
 import { createStackElement, createSymbol, type RichStack } from "./util";
 
-export function addNode(machine: RichStack, inputs: RichStack[], outputs: RichStack[], connectedNode: HTMLDivElement | undefined) {
+export function addNode(machine: RichStack, inputs: RichStack[], outputs: RichStack[]) {
 	chart_div.appendChild(createNodeElement(machine, inputs, outputs));
-	if (connectedNode) {
-		// todo: line stuff
+	if (active_stacks[0].el && active_stacks[1].el) {
+		chart_svg.appendChild(createLineElement(active_stacks[0].el, active_stacks[1].el));
 	}
 }
 
@@ -30,9 +30,24 @@ export function createNodeElement(machine: RichStack, inputs: RichStack[], outpu
 	move_div.appendChild(createSymbol("menu"));
 	delete_button.appendChild(createSymbol("delete"));
 
-	machine_div.appendChild(createStackElement(machine));
-	inputs.map(stack => inputs_div.appendChild(createStackElement(stack)));
-	outputs.map(stack => outputs_div.appendChild(createStackElement(stack)));
+	machine_div.appendChild(createStackElement(machine, true));
+	// inputs.map(stack => inputs_div.appendChild(createStackElement(stack, true)));
+	// outputs.map(stack => outputs_div.appendChild(createStackElement(stack, true)));
+
+	for (let stack of inputs) {
+		let el = createStackElement(stack, true);
+		inputs_div.appendChild(el);
+		if (stack.id == active_stacks[0].id && active_stacks[0].type == "input") {
+			active_stacks[1] = {el, id: stack.id, type: "input"};
+		}
+	}
+	for (let stack of outputs) {
+		let el = createStackElement(stack, true);
+		outputs_div.appendChild(el);
+		if (stack.id == active_stacks[0].id && active_stacks[0].type == "output") {
+			active_stacks[1] = {el, id: stack.id, type: "output"};
+		}
+	}
 
 	move_div.addEventListener("mousedown", (e) => {
 		let offsetX = e.clientX - parseInt(window.getComputedStyle(node_div).left)
@@ -66,4 +81,42 @@ export function createNodeElement(machine: RichStack, inputs: RichStack[], outpu
 	node_div.appendChild(bar_div);
 	node_div.appendChild(content_div);
 	return node_div;
+}
+
+export function createLineElement(stack0: HTMLDivElement, stack1: HTMLDivElement): SVGLineElement {
+	let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+
+	line.setAttribute("stroke", "white");
+
+	let x0 = chart_div.getBoundingClientRect().left;
+	let y0 = chart_div.getBoundingClientRect().top;
+    line.setAttribute("x1", stack0.getBoundingClientRect().left - x0 + 16 + "px");
+    line.setAttribute("y1", stack0.getBoundingClientRect().top - y0 + 16 + "px");
+    line.setAttribute("x2", stack1.getBoundingClientRect().left - x0 + 16 + "px");
+    line.setAttribute("y2", stack1.getBoundingClientRect().top - y0 + 16 + "px");
+
+	let callback = (_mutations: MutationRecord[], observer: MutationObserver) => {
+		let nodes = new Set(chart_div.children)
+		if (!nodes.has(node0) || !nodes.has(node1)) { // parent node deleted
+			chart_svg.removeChild(line);
+			observer.disconnect();
+			return;
+		}
+
+		let x0 = chart_div.getBoundingClientRect().left;
+		let y0 = chart_div.getBoundingClientRect().top;
+		line.setAttribute("x1", stack0.getBoundingClientRect().left - x0 + 16 + "px");
+		line.setAttribute("y1", stack0.getBoundingClientRect().top - y0 + 16 + "px");
+		line.setAttribute("x2", stack1.getBoundingClientRect().left - x0 + 16 + "px");
+		line.setAttribute("y2", stack1.getBoundingClientRect().top - y0 + 16 + "px");
+	}
+
+	let observer = new MutationObserver(callback);
+	let node0 = stack0.parentElement?.parentElement?.parentElement!;
+	let node1 = stack1.parentElement?.parentElement?.parentElement!;
+	observer.observe(node0, {attributes: true, attributeFilter: ["style"]});
+	observer.observe(node1, {attributes: true, attributeFilter: ["style"]});
+	observer.observe(chart_div, {childList: true});
+
+	return line;
 }

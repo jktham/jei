@@ -1,4 +1,4 @@
-import { names, oredict } from "./app";
+import { active_stacks, names, oredict } from "./app";
 import type { Stack } from "./generate";
 import { searchRecipes, searchUses } from "./search";
 
@@ -49,7 +49,7 @@ export function getRich(stack: Stack): RichStack {
 	};
 }
 
-export function createStackElement(stack: RichStack): HTMLDivElement {
+export function createStackElement(stack: RichStack, set_active: boolean): HTMLDivElement {
 	let stack_div = document.createElement("div");
 	let icon_img = document.createElement("img");
 	let count_span = document.createElement("span");
@@ -58,11 +58,13 @@ export function createStackElement(stack: RichStack): HTMLDivElement {
 	icon_img.className = "icon";
 	count_span.className = "count";
 
-	stack_div.title = `${stack.name} (${stack.id})`;
+	stack_div.title = `${stack.name}\n${stack.id}`;
 	stack_div.onclick = () => {
+		if (set_active) active_stacks[0] = {el: stack_div, id: stack.id, type: "output"};
 		searchRecipes(stack.id);
 	};
 	stack_div.oncontextmenu = (e) => {
+		if (set_active) active_stacks[0] = {el: stack_div, id: stack.id, type: "input"};
 		e.preventDefault();
 		searchUses(stack.id);
 	};
