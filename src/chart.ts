@@ -49,7 +49,7 @@ export function createNodeElement(machine: RichStack, inputs: RichStack[], outpu
 		}
 	}
 
-	move_div.addEventListener("mousedown", (e) => {
+	move_div.addEventListener("pointerdown", (e) => {
 		let offsetX = e.clientX - parseInt(window.getComputedStyle(node_div).left)
 		let offsetY = e.clientY - parseInt(window.getComputedStyle(node_div).top);
 		
@@ -61,12 +61,12 @@ export function createNodeElement(machine: RichStack, inputs: RichStack[], outpu
 		}
 
 		function reset() {
-			window.removeEventListener("mousemove", move);
-			window.removeEventListener("mouseup", reset);
+			window.removeEventListener("pointermove", move);
+			window.removeEventListener("pointerup", reset);
 		}
 
-		window.addEventListener("mousemove", move);
-		window.addEventListener("mouseup", reset);
+		window.addEventListener("pointermove", move);
+		window.addEventListener("pointerup", reset);
 	});
 
 	delete_button.addEventListener("click", () => {
