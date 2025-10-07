@@ -109,6 +109,7 @@ export function pushHistory(type: PageType, query: string) {
 	let page: Page = {type, query}
 	let current_page = history.pages[history.index];
 	if (page.type == current_page.type && page.query == current_page.query) {
+		updateHistoryButtons();
 		return; // avoid adding again when coming from history
 	}
 

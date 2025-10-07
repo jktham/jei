@@ -31,6 +31,16 @@ export function getRich(stack: Stack): RichStack {
 	let id = oredict.get(stack.id)?.[0] || stack.id;
 	let name = names.get(id) || stack.id;
 
+	let name_overrides: Map<string, string> = new Map([
+		["gregtech:material_tree", "Material Tree"],
+		["jeresources.mob", "Mob Drop"],
+		["jeresources.dungeon", "Dungeon Chest"],
+		["jeresources.villager", "Villager Trading"],
+		["jei.information", "Information"],
+		["gregtech:circuit.integrated", "Circuit"],
+	]);
+	name = name_overrides.get(id) || name;
+
 	let icon_overrides: Map<string, string> = new Map([
 		["gregtech:material_tree", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
 		["jeresources.mob", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__skull__2.png"],
@@ -73,6 +83,9 @@ export function createStackElement(stack: RichStack, set_active: boolean): HTMLD
 	icon_img.onerror = imgFallback;
 	icon_img.draggable = false;
 	count_span.textContent = stack.count.toString();
+	if (stack.count == 0) {
+		count_span.hidden = true;
+	}
 
 	stack_div.appendChild(icon_img);
 	stack_div.appendChild(count_span);

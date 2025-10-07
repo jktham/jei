@@ -87,6 +87,7 @@ export function createLineElement(stack0: HTMLDivElement, stack1: HTMLDivElement
 	let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
 
 	line.setAttribute("stroke", "white");
+	line.setAttribute("stroke-dasharray", "5,5");
 
 	let x0 = chart_div.getBoundingClientRect().left;
 	let y0 = chart_div.getBoundingClientRect().top;
