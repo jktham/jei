@@ -1,3 +1,4 @@
-import { init } from "./app";
+import { createApp } from 'vue';
+import Sus from './components/Sus.vue';
 
-await init();
+createApp(Sus).mount('#app');

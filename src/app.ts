@@ -1,22 +1,5 @@
-import type { Process } from "./generate";
+import type { Pack, Page, PageType, Process, History, ActiveStack, Data } from "./types";
 import { searchItems, clearResults, searchRecipes, searchUses } from "./search";
-
-type Pack = {
-	name: string;
-	path: string;
-};
-
-type PageType = "item" | "recipe" | "use";
-
-type Page = {
-	type: PageType;
-	query: string;
-}
-
-type History = {
-	pages: Page[];
-	index: number;
-}
 
 export let packs: Pack[] = [];
 export let names: Map<string, string> = new Map();
@@ -40,74 +23,27 @@ export let forward_button: HTMLButtonElement = document.getElementById("forward"
 export let close_button: HTMLButtonElement = document.getElementById("close")! as HTMLButtonElement;
 export let chart_svg: SVGElement = document.getElementById("chart_svg")! as unknown as SVGElement;
 
-export type ActiveStack = {
-	el: HTMLDivElement | undefined,
-	id: string,
-	type: "input" | "output" | "",
-};
 export let active_stacks: ActiveStack[] = [{el: undefined, id: "", type: ""}, {el: undefined, id: "", type: ""}];
 
-search_input.addEventListener("keyup", (e) => {
-	if (e.key != "Enter") return;
-	searchItems((e.target as HTMLInputElement).value);
-	close_button.disabled = false;
-});
-
-packs_select.addEventListener("change", async () => {
-	clearResults();
-	await loadPack(packs_select.value);
-	localStorage.setItem("pack", packs_select.value);
-	historyGo(history.index);
-})
-
-back_button.addEventListener("click", () => {
-	historyBack();
-})
-
-forward_button.addEventListener("click", () => {
-	historyForward();
-})
-
-close_button.addEventListener("click", () => {
-	clearResults();
-	close_button.disabled = true;
-})
-
-export async function init() {
-	search_input.value = "";
-	updateHistoryButtons();
-	await getPacks();
-	let pack = localStorage.getItem("pack");
-	if (pack) packs_select.value = pack;
-	await loadPack(packs_select.value);
+export async function getPacks(): Promise<Pack[]> {
+	let packs: Pack[] = await fetch("/packs.json").then(res => res.json());
+	return packs;
 }
 
-export async function getPacks() {
-	packs = await fetch("/packs.json").then(res => res.json());
-
-	packs_select.innerHTML = "";
-	for (let pack of packs) {
-		let opt = document.createElement("option");
-		opt.value = pack.path;
-		opt.innerHTML = pack.name;
-		packs_select.appendChild(opt);
-	}
-}
-
-export async function loadPack(path: string) {
-	status_span.textContent = "loading...";
-	names = new Map(await fetch(`${path}/names.json`).then(res => res.json()));
-	processes = await fetch(`${path}/processes.json`).then(res => res.json());
-	recipes_r = new Map(await fetch(`${path}/recipes_r.json`).then(res => res.json()));
-	recipes_u = new Map(await fetch(`${path}/recipes_u.json`).then(res => res.json()));
-	oredict = new Map(await fetch(`${path}/oredict.json`).then(res => res.json()));
-	oredict_inv = new Map(await fetch(`${path}/oredict_inv.json`).then(res => res.json()));
-	status_span.textContent = "";
+export async function loadPack(path: string): Promise<Data> {
+	return {
+		names: new Map(await fetch(`${path}/names.json`).then(res => res.json())),
+		processes: await fetch(`${path}/processes.json`).then(res => res.json()),
+		recipes_r: new Map(await fetch(`${path}/recipes_r.json`).then(res => res.json())),
+		recipes_u: new Map(await fetch(`${path}/recipes_u.json`).then(res => res.json())),
+		oredict: new Map(await fetch(`${path}/oredict.json`).then(res => res.json())),
+		oredict_inv: new Map(await fetch(`${path}/oredict_inv.json`).then(res => res.json())),
+	};
 }
 
 export function pushHistory(type: PageType, query: string) {
 	let page: Page = {type, query}
-	let current_page = history.pages[history.index];
+	let current_page = history.pages[history.index]!;
 	if (page.type == current_page.type && page.query == current_page.query) {
 		updateHistoryButtons();
 		return; // avoid adding again when coming from history
@@ -133,7 +69,7 @@ export function historyForward() {
 }
 
 function historyGo(index: number) {
-	let page = history.pages[index];
+	let page = history.pages[index]!;
 	if (page.type == "item") {
 		searchItems(page.query);
 	} else if (page.type == "recipe") {

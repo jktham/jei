@@ -1,6 +1,6 @@
 import { active_stacks, close_button, names, oredict_inv, processes, pushHistory, recipes_r, recipes_u, results_div, status_span } from "./app";
 import { addNode } from "./chart";
-import type { Stack } from "./generate";
+import type { Stack } from "./types";
 import { createStackElement, createSymbol, dedupStacks, getRich, imgFallback } from "./util";
 
 export function clearResults() {
@@ -9,9 +9,14 @@ export function clearResults() {
 	close_button.disabled = true;
 }
 
-export function searchItems(query: string) {
-	clearResults();
-	if (!query) return;
+export type ItemResult = {
+	id: string, 
+	display: string, 
+	icon: string,
+};
+
+export function searchItems(query: string, names: Map<string, string>, recipes_r: Map<string, string[]>, recipes_u: Map<string, string[]>, oredict_inv: Map<string, string[]>): ItemResult[] {
+	if (!query) return [];
 
 	let res: [string, string][] = [];
 	for (let [id, display] of names.entries()) {
@@ -32,14 +37,22 @@ export function searchItems(query: string) {
 		return !(recipes.length == 0 && uses.length == 0) // item unused
 	});
 
+	let results: ItemResult[] = [];
 	for (let [id, display] of res) {
-		results_div.appendChild(createItemResultElement(id, display, `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`));
+		results.push({
+			id: id,
+			display: display,
+			icon: `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`,
+		});
 	}
 	if (res.length == 0) {
-		results_div.appendChild(createItemResultElement(query, ":(", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png"));
+		results.push({
+			id: query,
+			display: ":(",
+			icon: "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png",
+		});
 	}
-	status_span.textContent = `found ${res.length} items`;
-	pushHistory("item", query);
+	return results;
 }
 
 export function searchRecipes(id: string) {
@@ -52,10 +65,10 @@ export function searchRecipes(id: string) {
 	for (let key of res) {
 		let i = Number(key.split(".")[0]);
 		let j = Number(key.split(".")[1]);
-		let process = processes[i].id;
-		let machines = processes[i].machines;
-		let inputs = processes[i].recipes[j].inputs;
-		let outputs = processes[i].recipes[j].outputs;
+		let process = processes[i]!.id;
+		let machines = processes[i]!.machines;
+		let inputs = processes[i]!.recipes[j]!.inputs;
+		let outputs = processes[i]!.recipes[j]!.outputs;
 		results_div.appendChild(createRecipeResultElement(process, machines, inputs, outputs));
 	}
 	status_span.textContent = `found ${res.length} recipes`;
@@ -72,10 +85,10 @@ export function searchUses(id: string) {
 	for (let key of res) {
 		let i = Number(key.split(".")[0]);
 		let j = Number(key.split(".")[1]);
-		let process = processes[i].id;
-		let machines = processes[i].machines;
-		let inputs = processes[i].recipes[j].inputs;
-		let outputs = processes[i].recipes[j].outputs;
+		let process = processes[i]!.id;
+		let machines = processes[i]!.machines;
+		let inputs = processes[i]!.recipes[j]!.inputs;
+		let outputs = processes[i]!.recipes[j]!.outputs;
 		results_div.appendChild(createRecipeResultElement(process, machines, inputs, outputs));
 	}
 	status_span.textContent = `found ${res.length} uses`;
@@ -132,7 +145,7 @@ export function createRecipeResultElement(process: string, machines: string[], i
 	// let machines_rich = dedupStacks(machines.map(machine => {return {id: machine || process, count: 0}})).map(stack => getRich(stack));
 	// machines_rich.map(stack => machines_div.appendChild(createStackElement(stack)));
 	let machines_rich = [getRich({id: machines[0] || process, count: 0})];
-	machines_div.appendChild(createStackElement(machines_rich[0], false));
+	if (machines_rich[0]) machines_div.appendChild(createStackElement(machines_rich[0], false));
 
 	let inputs_rich = dedupStacks(inputs).map(stack => getRich(stack));
 	let outputs_rich = dedupStacks(outputs).map(stack => getRich(stack));
@@ -144,7 +157,7 @@ export function createRecipeResultElement(process: string, machines: string[], i
 	add_button.appendChild(createSymbol("add"));
 	add_button.onclick = () => {
 		clearResults();
-		addNode(machines_rich[0], inputs_rich, outputs_rich);
+		if (machines_rich[0]) addNode(machines_rich[0], inputs_rich, outputs_rich);
 		active_stacks[0] = {el: undefined, id: "", type: ""};
 		active_stacks[1] = {el: undefined, id: "", type: ""};
 	};

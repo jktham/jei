@@ -1,53 +1,85 @@
-:root {
-	font-family: Roboto, Helvetica, Arial, sans-serif;
+<script setup lang="ts">
+import { getPacks, loadPack } from '@/app';
+import { searchItems, type ItemResult } from '@/search';
+import { computedAsync } from '@vueuse/core';
+import { watch, ref, computed } from 'vue';
 
-	color-scheme: light dark;
-	color: rgba(255, 255, 255, 1);
-	background-color: #101010;
+const packs = await getPacks();
+const pack = ref(localStorage.getItem("pack") ?? packs[0]?.path ?? "");
+watch(pack, (p) => { localStorage.setItem("pack", p) });
 
-	font-synthesis: none;
-	text-rendering: optimizeLegibility;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-}
+const data = computedAsync(async () => {
+	return await loadPack(pack.value);
+}, {
+	names: new Map(),
+	processes: [],
+	recipes_r: new Map(),
+	recipes_u: new Map(),
+	oredict: new Map(),
+	oredict_inv: new Map(),
+});
 
-* {
-	user-select: none;
-}
+const query = ref("");
+const results = ref<ItemResult[]>([]);
 
-body {
+const search = (query: string) => {
+	results.value = searchItems(query, data.value.names, data.value.recipes_r, data.value.recipes_u, data.value.oredict_inv);
+};
+
+const status = computed(() => {
+	if (results.value.length > 0) {
+		return `found ${results.value.length} items`;
+	} else if (data.value.names.size > 0) {
+		return `loaded ${data.value.names.size} items, ${data.value.recipes_r.size + data.value.recipes_u.size} recipes`;
+	} else {
+		return "loading...";
+	}
+});
+
+</script>
+
+<template>
+	<nav id="navbar">
+		<select v-model="pack" id="packs">
+			<option v-for="pack in packs" :value="pack.path">{{ pack.name }}</option>
+		</select>
+		<span id="status">{{ status }}</span>
+		<div class="linebreak"></div>
+		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query)" />
+		<button id="back" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+		<button id="forward" disabled><span class="material-symbols-outlined">chevron_right</span></button>
+		<button id="close" disabled><span class="material-symbols-outlined">close</span></button>
+	</nav>
+	<main id="main">
+		<div id="results">
+			<div v-for="result in results">{{ result }}</div>
+		</div>
+		<div id="chart"></div>
+		<svg id="chart_svg"></svg>
+	</main>
+</template>
+
+<style>
+#app {
 	margin: 0;
 	padding: 1rem;
 	height: calc(100dvh - 2rem);
 	display: flex;
 	flex-direction: column;
 }
+</style>
 
-select {
-	appearance: none;
-	color: inherit;
-	text-decoration: none;
-
-	background: transparent;
-	background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='32' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
-	background-repeat: no-repeat;
-	background-position-x: right;
-	background-position-y: center;
-}
-
+<style>
 #navbar {
 	display: flex;
-	flex-direction: row;
+	align-items: center;
 	flex-wrap: wrap;
 	flex-shrink: 0;
-	align-items: center;
 	gap: 0.25rem 0.5rem;
 	margin-bottom: 1rem;
 }
 
 #search {
-	border: none;
-	outline: none;
 	background-color: #202020;
 	width: 20rem;
 	max-width: 20rem;
@@ -55,7 +87,6 @@ select {
 	flex: 1 1 5rem;
 	padding: 0.5rem;
 	font-size: 1rem;
-	height: 1.5rem;
 }
 
 #packs {
@@ -263,3 +294,4 @@ button:active {
 	height: 100%;
 	width: 100%;
 }
+</style>

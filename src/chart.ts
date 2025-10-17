@@ -3,7 +3,7 @@ import { createStackElement, createSymbol, type RichStack } from "./util";
 
 export function addNode(machine: RichStack, inputs: RichStack[], outputs: RichStack[]) {
 	chart_div.appendChild(createNodeElement(machine, inputs, outputs));
-	if (active_stacks[0].el && active_stacks[1].el) {
+	if (active_stacks[0]?.el && active_stacks[1]?.el) {
 		chart_svg.appendChild(createLineElement(active_stacks[0].el, active_stacks[1].el));
 	}
 }
@@ -37,14 +37,14 @@ export function createNodeElement(machine: RichStack, inputs: RichStack[], outpu
 	for (let stack of inputs) {
 		let el = createStackElement(stack, true);
 		inputs_div.appendChild(el);
-		if (stack.id == active_stacks[0].id && active_stacks[0].type == "input") {
+		if (stack.id == active_stacks[0]?.id && active_stacks[0]?.type == "input") {
 			active_stacks[1] = {el, id: stack.id, type: "input"};
 		}
 	}
 	for (let stack of outputs) {
 		let el = createStackElement(stack, true);
 		outputs_div.appendChild(el);
-		if (stack.id == active_stacks[0].id && active_stacks[0].type == "output") {
+		if (stack.id == active_stacks[0]?.id && active_stacks[0]?.type == "output") {
 			active_stacks[1] = {el, id: stack.id, type: "output"};
 		}
 	}
@@ -97,7 +97,7 @@ export function createLineElement(stack0: HTMLDivElement, stack1: HTMLDivElement
     line.setAttribute("y2", stack1.getBoundingClientRect().top - y0 + 16 + "px");
 
 	let callback = (_mutations: MutationRecord[], observer: MutationObserver) => {
-		let nodes = new Set(chart_div.children)
+		let nodes = new Set(Array.from(chart_div.children));
 		if (!nodes.has(node0) || !nodes.has(node1)) { // parent node deleted
 			chart_svg.removeChild(line);
 			observer.disconnect();

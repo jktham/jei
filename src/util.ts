@@ -1,5 +1,5 @@
 import { active_stacks, names, oredict } from "./app";
-import type { Stack } from "./generate";
+import type { Stack } from "./types";
 import { searchRecipes, searchUses } from "./search";
 
 export function dedupStacks(stacks: Stack[]): Stack[] {

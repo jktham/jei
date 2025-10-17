@@ -1,4 +1,5 @@
 import fs from "fs";
+import type { Process } from "./types";
 
 async function generate() {
 	console.log("generating recipe data");
@@ -94,10 +95,10 @@ function parseOredict(oredict_str: string, names: Map<string, string>): Map<stri
 	let values: string[] = [];
 	for (let line of oredict_str.split(/\r?\n/)) {
 		if (line.startsWith("Ore entries for")) {
-			key = [...line.matchAll(/<(.*)>/g)][0]?.[1];
+			key = [...line.matchAll(/<(.*)>/g)][0]?.[1] ?? "";
 			values = [];
 		} else {
-			values.push([...line.matchAll(/<(.*)>/g)][0]?.[1]);
+			values.push([...line.matchAll(/<(.*)>/g)][0]?.[1] ?? "");
 		}
 
 		if (key && values) {
@@ -155,22 +156,6 @@ function invertOredict(oredict: Map<string, string[]>): Map<string, string[]> {
 	return oredict_inv;
 }
 
-export type Stack = {
-	id: string,
-	count: number,
-};
-
-export type Recipe = {
-	inputs: Stack[],
-	outputs: Stack[],
-};
-
-export type Process = {
-	id: string,
-	machines: string[],
-	recipes: Recipe[],
-}
-
 function parseProcesses(processes_str: string): Process[] {
 	let processes: Process[] = [];
 	let raw_processes = JSON.parse(processes_str);
@@ -197,7 +182,7 @@ function reduceProcessesOredict(processes: Process[], oredict: Map<string, strin
 			let ores: string[] = [];
 
 			for (let i=0; i<n; i++) {
-				ores = [...new Set(ores.concat(oredict_inv.get(recipe.inputs[i].id) ?? []))];
+				ores = [...new Set(ores.concat(oredict_inv.get(recipe.inputs[i]?.id ?? "") ?? []))];
 			}
 			let entries = ores.map(o => oredict.get(o) ?? []);
 
@@ -210,10 +195,10 @@ function reduceProcessesOredict(processes: Process[], oredict: Map<string, strin
 			let matches: Match[] = [];
 			for (let entry of entries) {
 				for (let i=0; i < recipe.inputs.length - entry.length + 1; i++) {
-					if(entry.every((e, j) => (e == recipe.inputs[i + j].id))) {
+					if(entry.every((e, j) => (e == recipe.inputs[i + j]?.id))) {
 						matches.push({
 							entry: entry,
-							ore: ores[entries.indexOf(entry)],
+							ore: ores[entries.indexOf(entry)] ?? "",
 							index: i,
 							length: entry.length,
 						});
@@ -236,9 +221,9 @@ function reduceProcessesOredict(processes: Process[], oredict: Map<string, strin
 			matches = matches.filter(m => m.length != 0);
 
 			for (let match of matches) {
-				recipe.inputs[match.index].id = match.ore;
+				recipe.inputs[match.index]!.id = match.ore;
 				for (let j=1; j<match.length; j++) {
-					recipe.inputs[match.index+j].id = "";
+					recipe.inputs[match.index+j]!.id = "";
 				}
 			}
 			recipe.inputs = recipe.inputs.filter(i => i.id != "");
