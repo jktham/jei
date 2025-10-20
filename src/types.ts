@@ -1,42 +1,20 @@
-export type Stack = {
+export type RawStack = {
 	id: string,
 	count: number,
-};
-
-export type Recipe = {
-	inputs: Stack[],
-	outputs: Stack[],
 };
 
 export type Process = {
 	id: string,
 	machines: string[],
-	recipes: Recipe[],
+	recipes: {
+		inputs: RawStack[],
+		outputs: RawStack[],
+	}[],
 };
-
 
 export type Pack = {
 	name: string,
 	path: string,
-};
-
-export type PageType = "item" | "recipe" | "use";
-
-export type Page = {
-	type: PageType,
-	query: string,
-};
-
-export type History = {
-	pages: Page[],
-	index: number,
-};
-
-
-export type ActiveStack = {
-	el: HTMLDivElement | undefined,
-	id: string,
-	type: "input" | "output" | "",
 };
 
 export type Data = {
@@ -49,3 +27,19 @@ export type Data = {
 	oredict_inv: Map<string, string[]>,
 	// history: History,
 };
+
+export type Stack = {
+	id: string,
+	count: number,
+	name: string,
+	icon: string,
+};
+
+export type Recipe = {
+	process: Stack,
+	machines: Stack[],
+	inputs: Stack[],
+	outputs: Stack[],
+};
+
+export type SearchMode = "r" | "u";

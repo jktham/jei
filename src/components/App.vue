@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { getPacks, loadPack } from '@/app';
-import { searchItems, type ItemResult } from '@/search';
+import { searchItems, searchRecipes } from '@/search';
 import { computedAsync } from '@vueuse/core';
 import { watch, ref, computed } from 'vue';
+import ItemResult from './ItemResult.vue';
+import type { Recipe, Stack, SearchMode } from '@/types';
+import RecipeResult from './RecipeResult.vue';
+import Symbol from './Symbol.vue';
 
 const packs = await getPacks();
 const pack = ref(localStorage.getItem("pack") ?? packs[0]?.path ?? "");
@@ -20,15 +24,24 @@ const data = computedAsync(async () => {
 });
 
 const query = ref("");
-const results = ref<ItemResult[]>([]);
+const itemResults = ref<Stack[]>([]);
+const recipeResults = ref<Recipe[]>([]);
 
-const search = (query: string) => {
-	results.value = searchItems(query, data.value.names, data.value.recipes_r, data.value.recipes_u, data.value.oredict_inv);
+const searchItem = (query: string) => {
+	recipeResults.value = [];
+	itemResults.value = searchItems(query, data.value);
+};
+
+const searchRecipe = (id: string, mode: SearchMode) => {
+	itemResults.value = [];
+	recipeResults.value = searchRecipes(id, mode, data.value);
 };
 
 const status = computed(() => {
-	if (results.value.length > 0) {
-		return `found ${results.value.length} items`;
+	if (recipeResults.value.length > 0) {
+		return `found ${recipeResults.value.length} recipes`;
+	} else if (itemResults.value.length > 0) {
+		return `found ${itemResults.value.length} items`;
 	} else if (data.value.names.size > 0) {
 		return `loaded ${data.value.names.size} items, ${data.value.recipes_r.size + data.value.recipes_u.size} recipes`;
 	} else {
@@ -45,14 +58,19 @@ const status = computed(() => {
 		</select>
 		<span id="status">{{ status }}</span>
 		<div class="linebreak"></div>
-		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query)" />
-		<button id="back" disabled><span class="material-symbols-outlined">chevron_left</span></button>
-		<button id="forward" disabled><span class="material-symbols-outlined">chevron_right</span></button>
-		<button id="close" disabled><span class="material-symbols-outlined">close</span></button>
+		<input id="search" placeholder="item search" v-model="query" @keyup.enter="searchItem(query)" />
+		<button id="back" disabled><Symbol>chevron_left</Symbol></button>
+		<button id="forward" disabled><Symbol>chevron_right</Symbol></button>
+		<button id="close" disabled><Symbol>close</Symbol></button>
 	</nav>
 	<main id="main">
 		<div id="results">
-			<div v-for="result in results">{{ result }}</div>
+			<div v-for="result in itemResults.slice(0, 100)">
+				<ItemResult :item="result" :data :searchRecipe/>
+			</div>
+			<div v-for="result in recipeResults.slice(0, 100)">
+				<RecipeResult :recipe="result" :data :searchRecipe/>
+			</div>
 		</div>
 		<div id="chart"></div>
 		<svg id="chart_svg"></svg>
@@ -143,85 +161,6 @@ button:active {
 	overflow: auto;
 	z-index: 10;
 	background-color: #101010;
-}
-
-#results .item {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	gap: 0.5rem;
-	cursor: pointer;
-	padding: 0.5rem;
-	min-width: fit-content;
-}
-
-#results .item:hover {
-	background-color: #202020;
-}
-
-#results .icon {
-	width: 32px;
-	height: 32px;
-	min-width: 32px;
-	min-height: 32px;
-}
-
-#results .id {
-	color: #aaaaaa;
-}
-
-#results .recipe {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	gap: 1rem;
-	padding: 0.5rem;
-	min-width: fit-content;
-}
-
-#results .add {
-	margin-left: auto;
-}
-
-.stacks {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	gap: 0.5rem;
-	min-height: 32px;
-	overflow: auto;
-}
-
-.stack {
-	position: relative;
-	width: 32px;
-	height: 32px;
-	min-width: 32px;
-	min-height: 32px;
-	cursor: pointer;
-}
-
-.stack:hover {
-	background-color: #303030;
-}
-
-.stack .icon {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 32px;
-	height: 32px;
-	min-width: 32px;
-	min-height: 32px;
-}
-
-.stack .count {
-	position: absolute;
-	bottom: 0;
-	right: 0;
-	max-width: 30px;
-	text-shadow: 1px 1px 2px black;
-	z-index: 20;
 }
 
 #chart {
