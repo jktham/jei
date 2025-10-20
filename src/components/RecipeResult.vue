@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import type { Data, Recipe, SearchMode } from '@/types';
+import type { Recipe, SearchMode } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
 
-const { recipe, data, searchRecipe } = defineProps<{ recipe: Recipe, data: Data, searchRecipe: (id: string, mode: SearchMode, data: Data) => void }>();
+const { recipe, search } = defineProps<{ recipe: Recipe, search: (query: string, mode: SearchMode) => void }>();
 </script>
 
 <template>
 <div class="recipe">
-	<Stack :stack="recipe.machines[0] ?? recipe.process" :searchRecipe :data></Stack>
+	<Stack :stack="recipe.machines[0] ?? recipe.process" :search></Stack>
 	<div class="stacks inputs">
-		<Stack v-for="stack in recipe.inputs" :stack :searchRecipe :data></Stack>
+		<Stack v-for="stack in recipe.inputs" :stack :search></Stack>
 	</div>
 	<div class="arrow"><Symbol>arrow_forward</Symbol></div>
 	<div class="stacks outputs">
-		<Stack v-for="stack in recipe.outputs" :stack :searchRecipe :data></Stack>
+		<Stack v-for="stack in recipe.outputs" :stack :search></Stack>
 	</div>
 	<button class="add"><Symbol>add</Symbol></button>
 </div>

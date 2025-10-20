@@ -18,14 +18,12 @@ export type Pack = {
 };
 
 export type Data = {
-	// packs: Pack[],
 	names: Map<string, string>,
 	processes: Process[],
 	recipes_r: Map<string, string[]>,
 	recipes_u: Map<string, string[]>,
 	oredict: Map<string, string[]>,
 	oredict_inv: Map<string, string[]>,
-	// history: History,
 };
 
 export type Stack = {
@@ -42,4 +40,9 @@ export type Recipe = {
 	outputs: Stack[],
 };
 
-export type SearchMode = "r" | "u";
+export type SearchMode = "item" | "recipe" | "use";
+
+export type History = {
+	pages: string[], // `${SearchMode}/${string}`[],
+	index: number,
+};

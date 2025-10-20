@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import type { Data, Stack as StackT, SearchMode } from '@/types';
-import { imgFallback } from '@/util';
+import type { Stack as StackT, SearchMode } from '@/types';
 import Stack from './Stack.vue';
 
-const { item, data, searchRecipe } = defineProps<{ item: StackT, data: Data, searchRecipe: (id: string, mode: SearchMode, data: Data) => void }>();
+const { item, search } = defineProps<{ item: StackT, search: (query: string, mode: SearchMode) => void }>();
 
 </script>
 
 <template>
 <div class="item">
-	<Stack :stack="item" :data :searchRecipe></Stack>
+	<Stack :stack="item" :search></Stack>
 	<span class="name">{{ item.name }}</span>
 	<span class="id">{{ item.id }}</span>
 </div>

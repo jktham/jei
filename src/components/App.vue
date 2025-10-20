@@ -4,13 +4,17 @@ import { searchItems, searchRecipes } from '@/search';
 import { computedAsync } from '@vueuse/core';
 import { watch, ref, computed } from 'vue';
 import ItemResult from './ItemResult.vue';
-import type { Recipe, Stack, SearchMode } from '@/types';
+import type { Recipe, Stack, SearchMode, History } from '@/types';
 import RecipeResult from './RecipeResult.vue';
 import Symbol from './Symbol.vue';
+import { historyBack, historyForward, historyPush, historyGo } from '@/history';
 
 const packs = await getPacks();
 const pack = ref(localStorage.getItem("pack") ?? packs[0]?.path ?? "");
-watch(pack, (p) => { localStorage.setItem("pack", p) });
+
+watch(pack, (p) => {
+	localStorage.setItem("pack", p);
+});
 
 const data = computedAsync(async () => {
 	return await loadPack(pack.value);
@@ -23,19 +27,29 @@ const data = computedAsync(async () => {
 	oredict_inv: new Map(),
 });
 
+watch(data, (_d) => {
+	historyGo(history.value, history.value.index, search);
+});
+
 const query = ref("");
 const itemResults = ref<Stack[]>([]);
 const recipeResults = ref<Recipe[]>([]);
+const history = ref<History>({pages: ["item/"], index: 0});
 
-const searchItem = (query: string) => {
-	recipeResults.value = [];
-	itemResults.value = searchItems(query, data.value);
-};
+const search = (query: string, mode: SearchMode) => {
+	historyPush(history.value, `${mode}/${query}`);
+	clearResults();
+	if (mode == "item") {
+		itemResults.value = searchItems(query, data.value);
+	} else {
+		recipeResults.value = searchRecipes(query, mode, data.value);
+	}
+}
 
-const searchRecipe = (id: string, mode: SearchMode) => {
+const clearResults = () => {
 	itemResults.value = [];
-	recipeResults.value = searchRecipes(id, mode, data.value);
-};
+	recipeResults.value = [];
+}
 
 const status = computed(() => {
 	if (recipeResults.value.length > 0) {
@@ -58,18 +72,18 @@ const status = computed(() => {
 		</select>
 		<span id="status">{{ status }}</span>
 		<div class="linebreak"></div>
-		<input id="search" placeholder="item search" v-model="query" @keyup.enter="searchItem(query)" />
-		<button id="back" disabled><Symbol>chevron_left</Symbol></button>
-		<button id="forward" disabled><Symbol>chevron_right</Symbol></button>
-		<button id="close" disabled><Symbol>close</Symbol></button>
+		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query, 'item')" />
+		<button id="back" :disabled="history.index <= 0" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
+		<button id="forward" :disabled="history.index >= history.pages.length - 1" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
+		<button id="close" :disabled="itemResults.length == 0 && recipeResults.length == 0" @click="clearResults"><Symbol>close</Symbol></button>
 	</nav>
 	<main id="main">
 		<div id="results">
-			<div v-for="result in itemResults.slice(0, 100)">
-				<ItemResult :item="result" :data :searchRecipe/>
+			<div v-for="result in itemResults.slice(0, 1000)">
+				<ItemResult :item="result" :data :search/>
 			</div>
-			<div v-for="result in recipeResults.slice(0, 100)">
-				<RecipeResult :recipe="result" :data :searchRecipe/>
+			<div v-for="result in recipeResults.slice(0, 1000)">
+				<RecipeResult :recipe="result" :data :search/>
 			</div>
 		</div>
 		<div id="chart"></div>

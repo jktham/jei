@@ -35,7 +35,14 @@ export function searchItems(query: string, data: Data): Stack[] {
 }
 
 export function searchRecipes(id: string, mode: SearchMode, data: Data): Recipe[] {
-	let recipes = mode == "r" ? data.recipes_r : data.recipes_u;
+	if (!id) return [];
+	
+	let recipes = new Map();
+	if (mode == "recipe") {
+		recipes = data.recipes_r;
+	} else if (mode == "use") {
+		recipes = data.recipes_u;
+	}
 
 	let res = recipes.get(id) ?? [];
 	for (let entry of data.oredict_inv.get(id) ?? []) {
