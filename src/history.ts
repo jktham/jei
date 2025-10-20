@@ -1,8 +1,8 @@
-import type { History, SearchMode } from "./types";
+import type { History, Page, SearchMode } from "./types";
 
-export function historyPush(history: History, page: string) {
-	if (history.pages[history.index] == page) return;
-	history.pages = history.pages.slice(0, history.index+1);
+export function historyPush(history: History, page: Page) {
+	if (history.pages[history.index]?.query == page.query && history.pages[history.index]?.mode == page.mode) return;
+	history.pages = history.pages.slice(0, history.index+1).filter(p => p.query != "");
 	history.pages.push(page);
 	history.index = history.pages.length - 1;
 }
@@ -22,6 +22,5 @@ export function historyGo(history: History, index: number, search: (query: strin
 	if (!page) return;
 	history.index = index;
 	
-	let [mode, query] = page.split(/\//) as [SearchMode, string];
-	search(query, mode);
+	search(page.query, page.mode);
 }

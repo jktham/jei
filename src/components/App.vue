@@ -4,10 +4,11 @@ import { searchItems, searchRecipes } from '@/search';
 import { computedAsync } from '@vueuse/core';
 import { watch, ref, computed } from 'vue';
 import ItemResult from './ItemResult.vue';
-import type { Recipe, Stack, SearchMode, History } from '@/types';
+import type { Recipe, Stack, SearchMode, History, Node as NodeT } from '@/types';
 import RecipeResult from './RecipeResult.vue';
 import Symbol from './Symbol.vue';
 import { historyBack, historyForward, historyPush, historyGo } from '@/history';
+import Node from './Node.vue';
 
 const packs = await getPacks();
 const pack = ref(localStorage.getItem("pack") ?? packs[0]?.path ?? "");
@@ -34,22 +35,24 @@ watch(data, (_d) => {
 const query = ref("");
 const itemResults = ref<Stack[]>([]);
 const recipeResults = ref<Recipe[]>([]);
-const history = ref<History>({pages: ["item/"], index: 0});
+const history = ref<History>({pages: [{query: "", mode: "item"}], index: 0});
 
 const search = (query: string, mode: SearchMode) => {
-	historyPush(history.value, `${mode}/${query}`);
-	clearResults();
+	historyPush(history.value, {query, mode});
 	if (mode == "item") {
+		recipeResults.value = [];
 		itemResults.value = searchItems(query, data.value);
 	} else {
+		itemResults.value = [];
 		recipeResults.value = searchRecipes(query, mode, data.value);
 	}
-}
+};
 
 const clearResults = () => {
 	itemResults.value = [];
 	recipeResults.value = [];
-}
+	historyPush(history.value, {query: "", mode: "item"});
+};
 
 const status = computed(() => {
 	if (recipeResults.value.length > 0) {
@@ -63,6 +66,24 @@ const status = computed(() => {
 	}
 });
 
+const backDisabled = computed(() => history.value.index <= 0 || history.value.pages[history.value.index-1]?.query == '');
+const forwardDisabled = computed(() => history.value.index >= history.value.pages.length - 1 || history.value.pages[history.value.index+1]?.query == '');
+const closeDisabled = computed(() => itemResults.value.length == 0 && recipeResults.value.length == 0);
+
+const chartNodes = ref<NodeT[]>([]);
+
+const addToChart = (node: NodeT) => {
+	if (node.x == -1) node.x = Math.random() * 400;
+	if (node.y == -1) node.y = Math.random() * 400;
+
+	chartNodes.value.push(node);
+	clearResults();
+};
+
+const removeFromChart = (node: NodeT) => {
+	chartNodes.value = chartNodes.value.filter(n => n != node); // compares reference
+};
+
 </script>
 
 <template>
@@ -73,9 +94,9 @@ const status = computed(() => {
 		<span id="status">{{ status }}</span>
 		<div class="linebreak"></div>
 		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query, 'item')" />
-		<button id="back" :disabled="history.index <= 0" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
-		<button id="forward" :disabled="history.index >= history.pages.length - 1" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
-		<button id="close" :disabled="itemResults.length == 0 && recipeResults.length == 0" @click="clearResults"><Symbol>close</Symbol></button>
+		<button id="back" :disabled="backDisabled" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
+		<button id="forward" :disabled="forwardDisabled" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
+		<button id="close" :disabled="closeDisabled" @click="clearResults"><Symbol>close</Symbol></button>
 	</nav>
 	<main id="main">
 		<div id="results">
@@ -83,10 +104,12 @@ const status = computed(() => {
 				<ItemResult :item="result" :data :search/>
 			</div>
 			<div v-for="result in recipeResults.slice(0, 1000)">
-				<RecipeResult :recipe="result" :data :search/>
+				<RecipeResult :recipe="result" :data :search :addToChart/>
 			</div>
 		</div>
-		<div id="chart"></div>
+		<div id="chart">
+			<Node v-for="node in chartNodes" :node :search :removeFromChart/>
+		</div>
 		<svg id="chart_svg"></svg>
 	</main>
 </template>
@@ -158,7 +181,7 @@ button:active {
 	background-color: #303030;
 }
 
-#close {
+#back {
 	margin-left: auto;
 }
 
@@ -184,57 +207,6 @@ button:active {
 	bottom: 0;
 	left: 0;
 	background-color: #080808;
-
-	.node {
-		position: absolute;
-		display: flex;
-		flex-direction: row;
-		user-select: none;
-		gap: 0.5rem;
-		padding: 0.5rem;
-		z-index: 2;
-
-		.bar {
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-
-			.move, .delete {
-				background-color: #202020;
-				color: #dddddd;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				padding: 0.5rem;
-				height: 1rem;
-				width: 1rem;
-				font-weight: 200;
-
-				&:active {
-					background-color: #303030;
-				}
-			}
-
-			.move {
-				cursor: grab;
-				&:active {
-					cursor: grabbing;
-				}
-			}
-		}
-
-		.content {
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-			max-width: 40rem;
-
-			.stacks {
-				display: flex;
-				flex-wrap: nowrap;
-			}
-		}
-	}
 }
 
 #chart_svg {

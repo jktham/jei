@@ -42,7 +42,18 @@ export type Recipe = {
 
 export type SearchMode = "item" | "recipe" | "use";
 
+export type Page = {
+	query: string,
+	mode: SearchMode,
+};
+
 export type History = {
-	pages: string[], // `${SearchMode}/${string}`[],
+	pages: Page[],
 	index: number,
+};
+
+export type Node = {
+	recipe: Recipe,
+	x: number,
+	y: number,
 };
