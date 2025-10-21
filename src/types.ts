@@ -52,8 +52,18 @@ export type History = {
 	index: number,
 };
 
-export type Node = {
-	recipe: Recipe,
+export type Position = {
 	x: number,
 	y: number,
 };
+
+export type Node = {
+	recipe: Recipe,
+	children: Node[],
+	inputs: Map<string, HTMLDivElement>,
+	outputs: Map<string, HTMLDivElement>,
+	position: Position,
+	uuid: number,
+};
+
+export type NodeMode = "input" | "output";

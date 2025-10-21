@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import type { Node, Recipe, SearchMode } from '@/types';
+import type { Node, NodeMode, SearchMode } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
-import { ref, useTemplateRef, type ShallowRef } from 'vue';
+import { onMounted, ref, useTemplateRef, type ShallowRef } from 'vue';
 import { useParentElement } from '@vueuse/core';
 
-const { node, search, removeFromChart } = defineProps<{ node: Node, search: (query: string, mode: SearchMode) => void, removeFromChart: (node: Node) => void }>();
+const { node, search, removeFromChart, setActiveNode, updateLines } = defineProps<{ node: Node, search: (query: string, mode: SearchMode) => void, removeFromChart: (node: Node) => void, setActiveNode: (node: Node|undefined, mode: NodeMode|undefined) => void, updateLines: () => void }>();
 
-const node_div = useTemplateRef("node_div") as Readonly<ShallowRef<HTMLDivElement>>;
-const chart_div = useParentElement(node_div) as Readonly<ShallowRef<HTMLDivElement>>;
-
-const left = ref(node.x);
-const top = ref(node.y);
+const node_div = useTemplateRef("node_div") as Readonly<ShallowRef<HTMLDivElement|null>>;
+const chart_div = useParentElement(node_div) as Readonly<ShallowRef<HTMLDivElement|null>>;
 
 const grabStart = (e: PointerEvent) => {
 	if (!node_div.value || !chart_div.value) return;
@@ -20,10 +17,14 @@ const grabStart = (e: PointerEvent) => {
 	let offsetY = e.clientY - parseInt(window.getComputedStyle(node_div.value).top);
 	
 	function move(e: MouseEvent) {
+		if (!node_div.value || !chart_div.value) return;
+
 		let chart_rect = chart_div.value.getBoundingClientRect();
 		let node_rect = node_div.value.getBoundingClientRect();
-		left.value = Math.min(Math.max(e.clientX - offsetX, 0), chart_rect.width - node_rect.width);
-		top.value = Math.min(Math.max(e.clientY - offsetY, 0), chart_rect.height - node_rect.height);
+		node.position.x = Math.min(Math.max(e.clientX - offsetX, 0), chart_rect.width - node_rect.width);
+		node.position.y = Math.min(Math.max(e.clientY - offsetY, 0), chart_rect.height - node_rect.height);
+
+		updateLines();
 	}
 
 	function reset() {
@@ -35,21 +36,39 @@ const grabStart = (e: PointerEvent) => {
 	window.addEventListener("pointerup", reset);
 };
 
+const inputRefs = useTemplateRef("inputs");
+const outputRefs = useTemplateRef("outputs");
+
+onMounted(() => {
+	let inputDivs = inputRefs.value?.map(r => r?.stackRef ?? undefined) ?? [];
+	for (let [i, stack] of node.recipe.inputs.entries()) {
+		if (inputDivs[i]) node.inputs.set(stack.id, inputDivs[i]);
+	}
+	let outputDivs = outputRefs.value?.map(r => r?.stackRef ?? undefined) ?? [];
+	for (let [i, stack] of node.recipe.outputs.entries()) {
+		if (outputDivs[i]) node.outputs.set(stack.id, outputDivs[i]);
+	}
+
+	updateLines();
+});
+
+
+
 </script>
 
 <template>
-<div ref="node_div" class="node" :style="{left: left + 'px', top: top + 'px'}">
+<div ref="node_div" class="node" :style="{left: node.position.x + 'px', top: node.position.y + 'px'}">
 	<div class="bar">
 		<button class="move" @pointerdown="(e) => grabStart(e)"><Symbol>menu</Symbol></button>
 		<button class="delete" @click="removeFromChart(node)"><Symbol>close</Symbol></button>
 	</div>
 	<div class="content">
 		<div class="stacks inputs">
-			<Stack v-for="stack in node.recipe.inputs" :stack :search></Stack>
+			<Stack v-for="stack in node.recipe.inputs" ref="inputs" :stack :search @click="setActiveNode(node, 'output')"></Stack>
 		</div>
 		<Stack :stack="node.recipe.machines[0] ?? node.recipe.process" :search></Stack>
 		<div class="stacks outputs">
-			<Stack v-for="stack in node.recipe.outputs" :stack :search></Stack>
+			<Stack v-for="stack in node.recipe.outputs" ref="outputs" :stack :search @contextmenu.prevent="setActiveNode(node, 'input')"></Stack>
 		</div>
 	</div>
 </div>
@@ -103,6 +122,8 @@ const grabStart = (e: PointerEvent) => {
 		.stacks {
 			display: flex;
 			flex-wrap: nowrap;
+			gap: 0.5rem;
+			min-height: 32px;
 		}
 	}
 }

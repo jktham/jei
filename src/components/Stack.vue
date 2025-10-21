@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import type { SearchMode, Stack } from '@/types';
 import { imgFallback } from '@/util';
+import { useTemplateRef } from 'vue';
 
 const { stack, search } = defineProps<{ stack: Stack, search: (query: string, mode: SearchMode) => void }>();
 
+const stackRef = useTemplateRef("stack");
+
+defineExpose({
+	stackRef,
+});
 </script>
 
 <template>
-	<div class="stack" @click="search(stack.id, 'recipe')" @contextmenu.prevent="search(stack.id, 'use')" :title="stack.name + '\n' + stack.id">
+	<div ref="stack" class="stack" @click="search(stack.id, 'recipe')" @contextmenu.prevent="search(stack.id, 'use')" :title="stack.name + '\n' + stack.id">
 		<img class="icon" :src="stack.icon" @error="imgFallback" loading="lazy"></img>
 		<span class="count" v-if="stack.count > 0">{{ stack.count }}</span>
 	</div>

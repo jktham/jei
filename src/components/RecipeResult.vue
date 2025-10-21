@@ -3,7 +3,7 @@ import type { Node, Recipe, SearchMode } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
 
-const { recipe, search, addToChart } = defineProps<{ recipe: Recipe, search: (query: string, mode: SearchMode) => void, addToChart: (node: Node) => void }>();
+const { recipe, search, addToChart } = defineProps<{ recipe: Recipe, search: (query: string, mode: SearchMode) => void, addToChart: (recipe: Recipe) => void }>();
 </script>
 
 <template>
@@ -16,7 +16,7 @@ const { recipe, search, addToChart } = defineProps<{ recipe: Recipe, search: (qu
 	<div class="stacks outputs">
 		<Stack v-for="stack in recipe.outputs" :stack :search></Stack>
 	</div>
-	<button class="add" @click="addToChart({recipe: recipe, x: -1, y: -1})"><Symbol>add</Symbol></button>
+	<button class="add" @click="addToChart(recipe)"><Symbol>add</Symbol></button>
 </div>
 </template>
 
