@@ -4,8 +4,9 @@ import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
 import { onMounted, ref, useTemplateRef, type ShallowRef } from 'vue';
 import { useParentElement } from '@vueuse/core';
+import { solveTree } from '@/solver';
 
-const { node, search, removeFromChart, setActiveNode, updateLines } = defineProps<{ node: Node, search: (query: string, mode: SearchMode) => void, removeFromChart: (node: Node) => void, setActiveNode: (node: Node|undefined, mode: NodeMode|undefined) => void, updateLines: () => void }>();
+const { node, search, removeFromChart, setActiveNode, updateLines, solve } = defineProps<{ node: Node, search: (query: string, mode: SearchMode) => void, removeFromChart: (node: Node) => void, setActiveNode: (node: Node|undefined, mode: NodeMode|undefined) => void, updateLines: () => void, solve: (node: Node) => void }>();
 
 const node_div = useTemplateRef("node_div") as Readonly<ShallowRef<HTMLDivElement|null>>;
 const chart_div = useParentElement(node_div) as Readonly<ShallowRef<HTMLDivElement|null>>;
@@ -61,6 +62,7 @@ onMounted(() => {
 	<div class="bar">
 		<button class="move" @pointerdown="(e) => grabStart(e)"><Symbol>menu</Symbol></button>
 		<button class="delete" @click="removeFromChart(node)"><Symbol>close</Symbol></button>
+		<button class="solve" @click="solve(node)"><Symbol>graph_2</Symbol></button>
 	</div>
 	<div class="content">
 		<div class="stacks inputs">
@@ -89,7 +91,7 @@ onMounted(() => {
 		flex-direction: column;
 		gap: 0.5rem;
 
-		.move, .delete {
+		.move, .delete, .solve {
 			background-color: #202020;
 			color: #dddddd;
 			display: flex;

@@ -12,7 +12,7 @@ const { recipe, search, addToChart } = defineProps<{ recipe: Recipe, search: (qu
 	<div class="stacks inputs">
 		<Stack v-for="stack in recipe.inputs" :stack :search></Stack>
 	</div>
-	<div class="arrow"><Symbol>arrow_forward</Symbol></div>
+	<div class="arrow" :title="recipe.process.id"><Symbol>arrow_forward</Symbol></div>
 	<div class="stacks outputs">
 		<Stack v-for="stack in recipe.outputs" :stack :search></Stack>
 	</div>

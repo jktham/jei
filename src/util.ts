@@ -41,3 +41,7 @@ export function getRich(stack: RawStack, data: Data): Stack {
 		icon: icon,
 	};
 }
+
+export function newUuid(): number {
+	return Math.floor(Math.random() * 1000000);
+}

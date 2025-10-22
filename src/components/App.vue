@@ -9,6 +9,8 @@ import RecipeResult from './RecipeResult.vue';
 import Symbol from './Symbol.vue';
 import { historyBack, historyForward, historyPush, historyGo } from '@/history';
 import Node from './Node.vue';
+import { newUuid } from '@/util';
+import { solveTree } from '@/solver';
 
 const packs = await getPacks();
 const pack = ref(localStorage.getItem("pack") ?? packs[0]?.path ?? "");
@@ -85,7 +87,7 @@ const addToChart = (recipe: Recipe) => {
 			x: 0,
 			y: 0,
 		},
-		uuid: Math.floor(Math.random() * 1000000),
+		uuid: newUuid(),
 	};
 
 	if (activeNode.value) {
@@ -111,9 +113,9 @@ const addToChart = (recipe: Recipe) => {
 
 const removeFromChart = (node: NodeT) => {
 	for (let cnode of chartNodes.value) {
-		cnode.children = cnode.children.filter(n => n != node);
+		cnode.children = cnode.children.filter(n => n.uuid != node.uuid);
 	}
-	chartNodes.value = chartNodes.value.filter(n => n != node); // compares reference
+	chartNodes.value = chartNodes.value.filter(n => n.uuid != node.uuid);
 	updateLines();
 };
 
@@ -149,7 +151,12 @@ const updateLines = () => {
 	}
 
 	chartLines.value = linesPos;
-}
+};
+
+const solve = (node: NodeT) => {
+	let nodes = solveTree(node, data.value);
+	chartNodes.value = [...chartNodes.value, ...nodes];
+};
 
 </script>
 
@@ -175,7 +182,7 @@ const updateLines = () => {
 			</div>
 		</div>
 		<div id="chart" ref="chart_div">
-			<Node v-for="node in chartNodes" :key="node.uuid" :node :search :removeFromChart :setActiveNode :updateLines/>
+			<Node v-for="node in chartNodes" :key="node.uuid" :class="{outline: node.uuid == activeNode?.uuid}" :node :search :removeFromChart :setActiveNode :updateLines :solve/>
 		</div>
 		<svg id="chart_svg" xmlns="http://www.w3.org/2000/svg">
 			<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + 'px'" :y1="line[0].y + 'px'" :x2="line[1].x + 'px'" :y2="line[1].y + 'px'"></line>
@@ -276,6 +283,10 @@ button:active {
 	bottom: 0;
 	left: 0;
 	background-color: #080808;
+}
+
+.node.outline {
+	outline: solid 1px white;
 }
 
 #chart_svg {
