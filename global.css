@@ -3,10 +3,12 @@
 
 :root {
   --fg1: #ffffff;
-  --fg2: #aaaaaa;
+  --fg2: #dddddd;
+  --fg3: #aaaaaa;
   --bg1: #000000;
   --bg2: #101010;
   --bg3: #202020;
+  --bg4: #303030;
 }
 
 * {
@@ -26,6 +28,7 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
 }
 
 a {
@@ -33,15 +36,19 @@ a {
   text-decoration: none;
 }
 
-button, input {
+button, input, select {
   background: none;
   border: none;
 	outline: none;
   padding: 0;
 
   &:focus {
-    outline: solid 1px var(--fg2);
+    outline: solid 1px var(--fg3);
   }
+}
+
+button {
+  cursor: pointer;
 }
 
 select {

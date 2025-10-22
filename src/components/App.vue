@@ -2,7 +2,7 @@
 import { getPacks, loadPack } from '@/app';
 import { searchItems, searchRecipes } from '@/search';
 import { computedAsync } from '@vueuse/core';
-import { watch, ref, computed, type ShallowRef, useTemplateRef } from 'vue';
+import { watch, ref, computed, provide } from 'vue';
 import ItemResult from './ItemResult.vue';
 import type { Recipe, Stack, SearchMode, History, Node as NodeT, NodeMode, Position } from '@/types';
 import RecipeResult from './RecipeResult.vue';
@@ -11,7 +11,10 @@ import { historyBack, historyForward, historyPush, historyGo } from '@/history';
 import Node from './Node.vue';
 import { newUuid } from '@/util';
 import { solveTree } from '@/solver';
+import { grabStart } from '@/chart';
+import { addToChartKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
+// data
 const packs = await getPacks();
 const pack = ref(localStorage.getItem("pack") ?? packs[0]?.path ?? "");
 
@@ -34,6 +37,7 @@ watch(data, (_d) => {
 	historyGo(history.value, history.value.index, search);
 });
 
+// search
 const query = ref("");
 const itemResults = ref<Stack[]>([]);
 const recipeResults = ref<Recipe[]>([]);
@@ -61,6 +65,8 @@ const status = computed(() => {
 		return `found ${recipeResults.value.length} recipes`;
 	} else if (itemResults.value.length > 0) {
 		return `found ${itemResults.value.length} items`;
+	} else if (chartNodes.value.length > 0) {
+		return `total ${chartNodes.value.length} nodes`;
 	} else if (data.value.names.size > 0) {
 		return `loaded ${data.value.names.size} items, ${data.value.recipes_r.size} recipes`;
 	} else {
@@ -72,9 +78,12 @@ const backDisabled = computed(() => history.value.index <= 0 || history.value.pa
 const forwardDisabled = computed(() => history.value.index >= history.value.pages.length - 1 || history.value.pages[history.value.index+1]?.query == '');
 const closeDisabled = computed(() => itemResults.value.length == 0 && recipeResults.value.length == 0);
 
+// chart
 const chartNodes = ref<NodeT[]>([]);
 const activeNode = ref<NodeT|undefined>(undefined);
 const activeNodeMode = ref<NodeMode|undefined>(undefined);
+const chartLines = ref<[Position, Position][]>([]);
+const chartOffset = ref<Position>({x: 0, y: 0});
 
 const addToChart = (recipe: Recipe) => {
 	clearResults();
@@ -82,8 +91,8 @@ const addToChart = (recipe: Recipe) => {
 		recipe: recipe,
 		children: [],
 		position: {
-			x: 0,
-			y: 0,
+			x: -chartOffset.value.x,
+			y: -chartOffset.value.y,
 		},
 		uuid: newUuid(),
 	};
@@ -93,13 +102,13 @@ const addToChart = (recipe: Recipe) => {
 			node.children.push(activeNode.value);
 			node.position = {
 				x: activeNode.value.position.x,
-				y: activeNode.value.position.y + 150,
+				y: activeNode.value.position.y + 120,
 			};
 		} else if (activeNodeMode.value == "output" && node.recipe.outputs.map(r => r.id).find(id => activeNode.value?.recipe.inputs.map(r => r.id).includes(id))) {
 			activeNode.value.children.push(node);
 			node.position = {
 				x: activeNode.value.position.x,
-				y: activeNode.value.position.y - 150,
+				y: activeNode.value.position.y - 120,
 			};
 		}
 	}
@@ -123,8 +132,6 @@ const setActiveNode = (node: NodeT|undefined, mode: NodeMode|undefined) => {
 	activeNodeMode.value = mode;
 };
 
-const chartLines = ref<[Position, Position][]>([]);
-
 const updateLines = () => {
 	let lines: [Position, Position][] = [];
 	for (let node of chartNodes.value) {
@@ -146,35 +153,25 @@ const updateLines = () => {
 	chartLines.value = lines;
 };
 
+const clearChart = () => {
+	chartNodes.value = [];
+	chartLines.value = [];
+};
+
+// solver
 const solve = (node: NodeT) => {
 	let nodes = solveTree(node, data.value);
 	chartNodes.value = [...chartNodes.value, ...nodes];
 	updateLines();
 };
 
-const chartOffset = ref<Position>({x: 0, y: 0});
-
-const grabStart = (e: PointerEvent) => {
-	let initialPos: Position = {
-		x: e.clientX - chartOffset.value.x, 
-		y: e.clientY - chartOffset.value.y,
-	};
-	
-	function move(e: MouseEvent) {
-		chartOffset.value.x = e.clientX - initialPos.x;
-		chartOffset.value.y = e.clientY - initialPos.y;
-
-		updateLines();
-	}
-
-	function reset() {
-		window.removeEventListener("pointermove", move);
-		window.removeEventListener("pointerup", reset);
-	}
-
-	window.addEventListener("pointermove", move);
-	window.addEventListener("pointerup", reset);
-};
+// provide dependencies
+provide(searchKey, search);
+provide(addToChartKey, addToChart);
+provide(removeFromChartKey, removeFromChart);
+provide(setActiveNodeKey, setActiveNode);
+provide(updateLinesKey, updateLines);
+provide(solveKey, solve);
 
 </script>
 
@@ -188,37 +185,48 @@ const grabStart = (e: PointerEvent) => {
 		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query, 'item')" />
 		<button id="back" :disabled="backDisabled" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
 		<button id="forward" :disabled="forwardDisabled" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
-		<button id="close" :disabled="closeDisabled" @click="clearResults"><Symbol>close</Symbol></button>
+		<button id="close" :disabled="closeDisabled" @click="clearResults(); setActiveNode(undefined, undefined);"><Symbol>close</Symbol></button>
+		<button id="clear" :disabled="chartNodes.length == 0" @click="clearChart()"><Symbol>delete</Symbol></button>
 	</nav>
 	<main id="main">
 		<div id="results">
-			<div v-for="result in itemResults.slice(0, 1000)">
-				<ItemResult :item="result" :search/>
+			<div v-for="item in itemResults.slice(0, 1000)">
+				<ItemResult :item/>
 			</div>
-			<div v-for="result in recipeResults.slice(0, 1000)">
-				<RecipeResult :recipe="result" :search :addToChart/>
+			<div v-for="recipe in recipeResults.slice(0, 1000)">
+				<RecipeResult :recipe/>
 			</div>
 		</div>
-		<div id="chart">
-			<Node v-for="node in chartNodes" :key="node.uuid" :class="{outline: node.uuid == activeNode?.uuid}" :node :search :removeFromChart :setActiveNode :updateLines :solve :chartOffset/>
+		<div id="chart" @pointerdown.stop="(e) => grabStart(e, chartOffset, updateLines)">
+			<Node v-for="node in chartNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node :chartOffset/>
+			<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
+				<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + chartOffset.x + 'px'" :y1="line[0].y + chartOffset.y + 'px'" :x2="line[1].x + chartOffset.x + 'px'" :y2="line[1].y + chartOffset.y + 'px'"></line>
+			</svg>
 		</div>
-		<svg id="chart_svg" xmlns="http://www.w3.org/2000/svg" @pointerdown="grabStart">
-			<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + chartOffset.x + 'px'" :y1="line[0].y + chartOffset.y + 'px'" :x2="line[1].x + chartOffset.x + 'px'" :y2="line[1].y + chartOffset.y + 'px'"></line>
-		</svg>
 	</main>
 </template>
 
 <style>
 #app {
-	margin: 0;
-	padding: 1rem;
-	height: calc(100dvh - 2rem);
 	display: flex;
 	flex-direction: column;
+	height: calc(100dvh - 2rem);
+	margin: 0;
+	padding: 1rem;
+}
+
+button {
+	height: 2.5rem;
+	padding: 0.5rem;
+	background-color: var(--bg3);
+}
+
+button:active {
+	background-color: var(--bg4);
 }
 </style>
 
-<style>
+<style scoped>
 #navbar {
 	display: flex;
 	align-items: center;
@@ -226,96 +234,77 @@ const grabStart = (e: PointerEvent) => {
 	flex-shrink: 0;
 	gap: 0.25rem 0.5rem;
 	margin-bottom: 1rem;
-}
 
-#search {
-	background-color: #202020;
-	width: 20rem;
-	max-width: 20rem;
-	min-width: 5rem;
-	flex: 1 1 5rem;
-	padding: 0.5rem;
-	font-size: 1rem;
-}
+	.linebreak {
+		width: 100%;
+		height: 0;
+	}
 
-#packs {
-	box-sizing: content-box;
-	border: none;
-	outline: none;
-	background-color: #202020;
-	width: 20rem;
-	max-width: 20rem;
-	min-width: 5rem;
-	flex: 1 1 5rem;
-	padding: 0.5rem;
-	font-size: 1rem;
-	height: 1.5rem;
-}
+	#packs {
+		height: 2.5rem;
+		width: 20rem;
+		max-width: 20rem;
+		min-width: 5rem;
+		flex: 1 1 5rem;
+		padding: 0.5rem;
+		font-size: 1rem;
+		background-color: var(--bg3);
+	}
 
-#status {
-	margin-right: auto;
-}
+	#status {
+		display: flex;
+		align-items: center;
+		height: 2.5rem;
+		margin-right: auto;
+	}
 
-#navbar .linebreak {
-	width: 100%;
-	height: 0;
-}
+	#search {
+		width: 20rem;
+		max-width: 20rem;
+		min-width: 5rem;
+		flex: 1 1 5rem;
+		padding: 0.5rem;
+		font-size: 1rem;
+		background-color: var(--bg3);
+	}
 
-button {
-	box-sizing: content-box;
-	border: none;
-	outline: none;
-	background-color: #202020;
-	padding: 0.5rem;
-	font-size: 1rem;
-	height: 1.5rem;
-}
-
-button:active {
-	background-color: #303030;
-}
-
-#back {
-	margin-left: auto;
+	#back {
+		margin-left: auto;
+	}
 }
 
 #main {
 	position: relative;
 	height: 100%;
-}
 
-#results {
-	display: flex;
-	position: relative;
-	flex-direction: column;
-	max-height: 20rem;
-	overflow: auto;
-	z-index: 10;
-	background-color: #101010;
-}
+	#results {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		max-height: 30rem;
+		overflow: auto;
+		z-index: 10;
+		background-color: var(--bg2);
+	}
 
-#chart {
-	position: absolute;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	background-color: #080808;
-	overflow: hidden;
-}
+	#chart {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		overflow: hidden;
 
-.node.outline {
-	outline: solid 1px white;
-}
-
-#chart_svg {
-	position: absolute;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	z-index: 1;
-	height: 100%;
-	width: 100%;
+		#chart_bg {
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			height: 100%;
+			width: 100%;
+			background-color: var(--bg1);
+		}
+	}
 }
 </style>

@@ -19,18 +19,22 @@ export function getRich(stack: RawStack, data: Data): Stack {
 		["jeresources.mob", "Mob Drop"],
 		["jeresources.dungeon", "Dungeon Chest"],
 		["jeresources.villager", "Villager Trading"],
+		["jeresources.worldgen", "Worldgen"],
 		["jei.information", "Information"],
 		["gregtech:circuit.integrated", "Circuit"],
+		["gregtech:multiblock_info", "Multiblock Info"],
 	]);
 	name = name_overrides.get(id) || name;
 
 	const icon_overrides: Map<string, string> = new Map([
-		["gregtech:material_tree", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
+		["gregtech:material_tree", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__sapling__0.png"],
 		["jeresources.mob", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__skull__2.png"],
 		["jeresources.dungeon", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__chest__0.png"],
 		["jeresources.villager", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__emerald__0.png"],
-		["jei.information", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__writable_book__0.png"],
+		["jeresources.worldgen", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__compass__0.png"],
+		["jei.information", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
 		["gregtech:circuit.integrated", "/data/nomi_ceu_1.7.5_hm/icons/gregtech__meta_item_1__461.png"],
+		["gregtech:multiblock_info", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
 	]);
 	let icon = icon_overrides.get(id) || `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
 

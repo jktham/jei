@@ -1,10 +1,10 @@
 import { searchRecipes } from "./search";
-import type { Data, Node, Recipe, Stack } from "./types";
+import type { Data, Node, Recipe } from "./types";
 import { newUuid } from "./util";
 
 export function solveTree(node: Node, data: Data): Node[] {
 	let stop = ["gregtech:hammer", "gregtech:wire_cutter", "gregtech:screndriver", "gregtech:file", "gregtech:saw", "gregtech:mortar", "gregtech:meta_item_1:461", "deepmoblearning:data_model_", "gregtech:ore_", "fluid:water"];
-	let nodes = solveStep(node, [], 5, stop, [], data);
+	let nodes = solveStep(node, [], 8, stop, [], data);
 	return nodes;
 }
 

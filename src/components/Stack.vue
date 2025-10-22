@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import type { SearchMode, Stack } from '@/types';
+import { searchKey } from '@/keys';
+import type { Stack } from '@/types';
 import { imgFallback } from '@/util';
+import { inject } from 'vue';
 
-const { stack, search } = defineProps<{ stack: Stack, search: (query: string, mode: SearchMode) => void }>();
+const { stack } = defineProps<{ stack: Stack }>();
+const search = inject(searchKey, () => {});
+
 </script>
 
 <template>
 	<div class="stack" @click="search(stack.id, 'recipe')" @contextmenu.prevent="search(stack.id, 'use')" :title="stack.name + '\n' + stack.id">
-		<img class="icon" :src="stack.icon" @error="imgFallback" loading="lazy"></img>
+		<img class="icon" :src="stack.icon" @error="imgFallback" loading="lazy" draggable="false"></img>
 		<span class="count" v-if="stack.count > 0">{{ stack.count }}</span>
 	</div>
 </template>
@@ -23,7 +27,7 @@ const { stack, search } = defineProps<{ stack: Stack, search: (query: string, mo
 }
 
 .stack:hover {
-	background-color: #303030;
+	background-color: var(--bg3);
 }
 
 .stack .icon {

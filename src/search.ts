@@ -1,4 +1,4 @@
-import type { Data, Recipe, Stack, SearchMode, RawStack } from "./types";
+import type { Data, Recipe, Stack, SearchMode } from "./types";
 import { dedupStacks, getRich } from "./util";
 
 export function searchItems(query: string, data: Data): Stack[] {

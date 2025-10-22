@@ -9,4 +9,8 @@
 	max-height: 24px;
 	max-width: 24px;
 }
+
+.flip {
+	transform: scale(1, -1);
+}
 </style>
