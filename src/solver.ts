@@ -23,8 +23,6 @@ function solveStep(node: Node, nodes: Node[], depth: number, stop: string[], see
 			let child: Node = {
 				recipe: recipe,
 				children: [],
-				inputs: new Map(),
-				outputs: new Map(),
 				position: {
 					x: node.position.x + count * 160,
 					y: node.position.y - 120,

@@ -60,8 +60,6 @@ export type Position = {
 export type Node = {
 	recipe: Recipe,
 	children: Node[],
-	inputs: Map<string, HTMLDivElement>,
-	outputs: Map<string, HTMLDivElement>,
 	position: Position,
 	uuid: number,
 };

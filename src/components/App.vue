@@ -81,8 +81,6 @@ const addToChart = (recipe: Recipe) => {
 	let node: NodeT = {
 		recipe: recipe,
 		children: [],
-		inputs: new Map(),
-		outputs: new Map(),
 		position: {
 			x: 0,
 			y: 0,
@@ -109,6 +107,7 @@ const addToChart = (recipe: Recipe) => {
 	activeNode.value = undefined;
 	activeNodeMode.value = undefined;
 	chartNodes.value = [...chartNodes.value, node];
+	updateLines();
 };
 
 const removeFromChart = (node: NodeT) => {
@@ -124,38 +123,57 @@ const setActiveNode = (node: NodeT|undefined, mode: NodeMode|undefined) => {
 	activeNodeMode.value = mode;
 };
 
-const chart_div = useTemplateRef("chart_div") as Readonly<ShallowRef<HTMLDivElement|null>>;
 const chartLines = ref<[Position, Position][]>([]);
 
 const updateLines = () => {
-	if (!chart_div.value) return [];
-
-	let lines: [HTMLDivElement, HTMLDivElement][] = [];
+	let lines: [Position, Position][] = [];
 	for (let node of chartNodes.value) {
 		for (let child of node.children) {
-			for (let [id, inEl] of node.inputs.entries()) {
-				let outEl = child.outputs.get(id)
-				if (inEl && outEl) {
-					lines.push([inEl, outEl]);
+			for (let [i, id] of node.recipe.inputs.map(s => s.id).entries()) {
+				let j = child.recipe.outputs.map(s => s.id).indexOf(id);
+				if (j != -1) {
+					lines.push([{
+						x: node.position.x + 64 + i * 40,
+						y: node.position.y + 24,
+					}, {
+						x: child.position.x + 64 + j * 40,
+						y: child.position.y + 104,
+					}]);
 				}
 			}
 		}
 	}
-
-	let pos0: Position = {x: chart_div.value.getBoundingClientRect().x, y: chart_div.value.getBoundingClientRect().y};
-	let linesPos: [Position, Position][] = [];
-	for (let [start, end] of lines) {
-		let pos1: Position = {x: start.getBoundingClientRect().x - pos0.x + 16, y: start.getBoundingClientRect().y - pos0.y + 16};
-		let pos2: Position = {x: end.getBoundingClientRect().x - pos0.x + 16, y: end.getBoundingClientRect().y - pos0.y + 16};
-		linesPos.push([pos1, pos2]);
-	}
-
-	chartLines.value = linesPos;
+	chartLines.value = lines;
 };
 
 const solve = (node: NodeT) => {
 	let nodes = solveTree(node, data.value);
 	chartNodes.value = [...chartNodes.value, ...nodes];
+	updateLines();
+};
+
+const chartOffset = ref<Position>({x: 0, y: 0});
+
+const grabStart = (e: PointerEvent) => {
+	let initialPos: Position = {
+		x: e.clientX - chartOffset.value.x, 
+		y: e.clientY - chartOffset.value.y,
+	};
+	
+	function move(e: MouseEvent) {
+		chartOffset.value.x = e.clientX - initialPos.x;
+		chartOffset.value.y = e.clientY - initialPos.y;
+
+		updateLines();
+	}
+
+	function reset() {
+		window.removeEventListener("pointermove", move);
+		window.removeEventListener("pointerup", reset);
+	}
+
+	window.addEventListener("pointermove", move);
+	window.addEventListener("pointerup", reset);
 };
 
 </script>
@@ -181,11 +199,11 @@ const solve = (node: NodeT) => {
 				<RecipeResult :recipe="result" :search :addToChart/>
 			</div>
 		</div>
-		<div id="chart" ref="chart_div">
-			<Node v-for="node in chartNodes" :key="node.uuid" :class="{outline: node.uuid == activeNode?.uuid}" :node :search :removeFromChart :setActiveNode :updateLines :solve/>
+		<div id="chart">
+			<Node v-for="node in chartNodes" :key="node.uuid" :class="{outline: node.uuid == activeNode?.uuid}" :node :search :removeFromChart :setActiveNode :updateLines :solve :chartOffset/>
 		</div>
-		<svg id="chart_svg" xmlns="http://www.w3.org/2000/svg">
-			<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + 'px'" :y1="line[0].y + 'px'" :x2="line[1].x + 'px'" :y2="line[1].y + 'px'"></line>
+		<svg id="chart_svg" xmlns="http://www.w3.org/2000/svg" @pointerdown="grabStart">
+			<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + chartOffset.x + 'px'" :y1="line[0].y + chartOffset.y + 'px'" :x2="line[1].x + chartOffset.x + 'px'" :y2="line[1].y + chartOffset.y + 'px'"></line>
 		</svg>
 	</main>
 </template>
@@ -283,6 +301,7 @@ button:active {
 	bottom: 0;
 	left: 0;
 	background-color: #080808;
+	overflow: hidden;
 }
 
 .node.outline {
