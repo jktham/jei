@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getPacks, loadPack } from '@/app';
+import { getPacks, loadPack } from '@/data';
 import { searchItems, searchRecipes } from '@/search';
 import { computedAsync } from '@vueuse/core';
 import { watch, ref, computed, provide } from 'vue';
@@ -11,8 +11,8 @@ import { historyBack, historyForward, historyPush, historyGo } from '@/history';
 import Node from './Node.vue';
 import { newUuid } from '@/util';
 import { solveTree } from '@/solver';
-import { grabStart } from '@/chart';
-import { addToChartKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
+import { alignTree, getStackPos, grabStart } from '@/chart';
+import { addToChartKey, chartZoomKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
 // data
 const packs = await getPacks();
@@ -84,6 +84,7 @@ const activeNode = ref<NodeT|undefined>(undefined);
 const activeNodeMode = ref<NodeMode|undefined>(undefined);
 const chartLines = ref<[Position, Position][]>([]);
 const chartOffset = ref<Position>({x: 0, y: 0});
+const chartZoom = ref<number>(1);
 
 const addToChart = (recipe: Recipe) => {
 	clearResults();
@@ -139,13 +140,7 @@ const updateLines = () => {
 			for (let [i, id] of node.recipe.inputs.map(s => s.id).entries()) {
 				let j = child.recipe.outputs.map(s => s.id).indexOf(id);
 				if (j != -1) {
-					lines.push([{
-						x: node.position.x + 64 + i * 40,
-						y: node.position.y + 24,
-					}, {
-						x: child.position.x + 64 + j * 40,
-						y: child.position.y + 104,
-					}]);
+					lines.push([getStackPos(node, i, "input"), getStackPos(child, j, "output")]);
 				}
 			}
 		}
@@ -158,9 +153,18 @@ const clearChart = () => {
 	chartLines.value = [];
 };
 
+const scrollZoom = (e: WheelEvent) => {
+	if (e.deltaY > 0) {
+		chartZoom.value *= 0.9;
+	} else {
+		chartZoom.value /= 0.9;
+	}
+};
+
 // solver
 const solve = (node: NodeT) => {
 	let nodes = solveTree(node, data.value);
+	alignTree(node);
 	chartNodes.value = [...chartNodes.value, ...nodes];
 	updateLines();
 };
@@ -172,6 +176,29 @@ provide(removeFromChartKey, removeFromChart);
 provide(setActiveNodeKey, setActiveNode);
 provide(updateLinesKey, updateLines);
 provide(solveKey, solve);
+provide(chartZoomKey, chartZoom);
+
+// debug
+window.addEventListener("keyup", (e) => {
+	if (e.key == " ") {
+		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0]!;
+		let node: NodeT = {
+			recipe: recipe,
+			children: [],
+			position: {
+				x: -chartOffset.value.x + 400 / chartZoom.value,
+				y: -chartOffset.value.y + 600 / chartZoom.value,
+			},
+			uuid: newUuid(),
+		};
+
+		let nodes = solveTree(node, data.value);
+		alignTree(node);
+
+		chartNodes.value.push(node, ...nodes);
+		updateLines();
+	}
+});
 
 </script>
 
@@ -197,7 +224,7 @@ provide(solveKey, solve);
 				<RecipeResult :recipe/>
 			</div>
 		</div>
-		<div id="chart" @pointerdown.stop="(e) => grabStart(e, chartOffset, updateLines)">
+		<div id="chart" @pointerdown.stop="(e) => grabStart(e, chartOffset, chartZoom, updateLines)" @wheel="scrollZoom" :style="{zoom: chartZoom}">
 			<Node v-for="node in chartNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node :chartOffset/>
 			<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
 				<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + chartOffset.x + 'px'" :y1="line[0].y + chartOffset.y + 'px'" :x2="line[1].x + chartOffset.x + 'px'" :y2="line[1].y + chartOffset.y + 'px'"></line>
@@ -210,7 +237,7 @@ provide(solveKey, solve);
 #app {
 	display: flex;
 	flex-direction: column;
-	height: calc(100dvh - 2rem);
+	height: 100%;
 	margin: 0;
 	padding: 1rem;
 }

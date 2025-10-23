@@ -3,21 +3,22 @@ import type { Node, Position } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
 import { grabStart } from '@/chart';
-import { inject } from 'vue';
-import { removeFromChartKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
+import { inject, ref } from 'vue';
+import { chartZoomKey, removeFromChartKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
 const { node, chartOffset } = defineProps<{ node: Node, chartOffset: Position }>();
 const removeFromChart = inject(removeFromChartKey, () => {});
 const setActiveNode = inject(setActiveNodeKey, () => {});
 const updateLines = inject(updateLinesKey, () => {});
 const solve = inject(solveKey, () => {});
+const chartZoom = inject(chartZoomKey, ref(1));
 
 </script>
 
 <template>
 <div ref="node_div" class="node" :style="{left: node.position.x + chartOffset.x + 'px', top: node.position.y + chartOffset.y + 'px'}">
 	<div class="bar">
-		<button class="move" @pointerdown.stop="(e) => grabStart(e, node.position, updateLines)" title="move"><Symbol>menu</Symbol></button>
+		<button class="move" @pointerdown.stop="(e) => grabStart(e, node.position, chartZoom, updateLines)" title="move"><Symbol>menu</Symbol></button>
 		<button class="delete" @click="removeFromChart(node)" title="delete"><Symbol>close</Symbol></button>
 		<button class="solve" @click="solve(node)" title="solve"><Symbol class="flip">graph_2</Symbol></button>
 	</div>

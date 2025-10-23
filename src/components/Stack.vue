@@ -27,7 +27,7 @@ const search = inject(searchKey, () => {});
 }
 
 .stack:hover {
-	background-color: var(--bg3);
+	background-color: var(--bg4);
 }
 
 .stack .icon {

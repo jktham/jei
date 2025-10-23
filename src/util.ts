@@ -1,4 +1,4 @@
-import type { Data, Stack, RawStack } from "./types";
+import type { Data, Stack, RawStack, Position } from "./types";
 
 export function dedupStacks(stacks: RawStack[]): RawStack[] {
 	return [...new Set(stacks.map(s => s.id))].map(id => {return {id: id, count: stacks.filter(s => s.id == id).map(s => s.count).reduce((c, acc) => acc + c, 0)}}).sort((a, b) => a.id.localeCompare(b.id));
@@ -48,4 +48,22 @@ export function getRich(stack: RawStack, data: Data): Stack {
 
 export function newUuid(): number {
 	return Math.floor(Math.random() * 1000000);
+}
+
+export function add(a: Position, b: Position): Position {
+	return {
+		x: a.x + b.x,
+		y: a.y + b.y,
+	};
+}
+
+export function sub(a: Position, b: Position): Position {
+	return {
+		x: a.x - b.x,
+		y: a.y - b.y,
+	};
+}
+
+export function pos(x: number, y: number): Position {
+	return {x, y};
 }

@@ -2,16 +2,16 @@ import { searchRecipes } from "./search";
 import type { Data, Node, Recipe } from "./types";
 import { newUuid } from "./util";
 
-export function solveTree(node: Node, data: Data): Node[] {
+export function solveTree(root: Node, data: Data): Node[] {
 	let stop = ["gregtech:hammer", "gregtech:wire_cutter", "gregtech:screndriver", "gregtech:file", "gregtech:saw", "gregtech:mortar", "gregtech:meta_item_1:461", "deepmoblearning:data_model_", "gregtech:ore_", "fluid:water"];
-	let nodes = solveStep(node, [], 8, stop, [], data);
+	let nodes = solveStep(root, [], 20, 10000, stop, [], data);
 	return nodes;
 }
 
-function solveStep(node: Node, nodes: Node[], depth: number, stop: string[], seen: string[], data: Data): Node[] {
+function solveStep(node: Node, nodes: Node[], depth: number, limit: number, stop: string[], seen: string[], data: Data): Node[] {
 	if (depth <= 0) return nodes;
+	if (nodes.length >= limit) return nodes;
 
-	let count = 0;
 	for (let stack of node.recipe.inputs) {
 		if (stop.some(s => stack.id.startsWith(s))) continue;
 		if (seen.includes(stack.id)) continue;
@@ -24,17 +24,16 @@ function solveStep(node: Node, nodes: Node[], depth: number, stop: string[], see
 				recipe: recipe,
 				children: [],
 				position: {
-					x: node.position.x + count * 160,
-					y: node.position.y - 120,
+					x: node.position.x,
+					y: node.position.y,
 				},
 				uuid: newUuid(),
 			};
 			node.children.push(child);
 			nodes.push(child);
-			count++;
 
 			seen = [...seen, stack.id];
-			nodes = solveStep(child, nodes, depth - 1, stop, seen, data);
+			nodes = solveStep(child, nodes, depth - 1, limit, stop, seen, data);
 		}
 	}
 
