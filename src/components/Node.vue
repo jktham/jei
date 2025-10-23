@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { Node, Position } from '@/types';
+import type { Node } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
 import { grabStart } from '@/chart';
 import { inject, ref } from 'vue';
 import { chartZoomKey, removeFromChartKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
-const { node, chartOffset } = defineProps<{ node: Node, chartOffset: Position }>();
+const { node } = defineProps<{ node: Node }>();
 const removeFromChart = inject(removeFromChartKey, () => {});
 const setActiveNode = inject(setActiveNodeKey, () => {});
 const updateLines = inject(updateLinesKey, () => {});
@@ -16,7 +16,7 @@ const chartZoom = inject(chartZoomKey, ref(1));
 </script>
 
 <template>
-<div ref="node_div" class="node" :style="{left: node.position.x + chartOffset.x + 'px', top: node.position.y + chartOffset.y + 'px'}">
+<div class="node" :style="{left: node.position.x + 'px', top: node.position.y + 'px'}">
 	<div class="bar">
 		<button class="move" @pointerdown.stop="(e) => grabStart(e, node.position, chartZoom, updateLines)" title="move"><Symbol>menu</Symbol></button>
 		<button class="delete" @click="removeFromChart(node)" title="delete"><Symbol>close</Symbol></button>

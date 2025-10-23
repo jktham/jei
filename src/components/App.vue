@@ -232,10 +232,10 @@ window.addEventListener("keyup", (e) => {
 				<RecipeResult :recipe/>
 			</div>
 		</div>
-		<div id="chart" @pointerdown.stop="(e) => grabStart(e, chartOffset, chartZoom, updateLines)" @wheel="scrollZoom" :style="{zoom: chartZoom}">
-			<Node v-for="node in chartNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node :chartOffset/>
+		<div id="chart" @pointerdown.stop="(e) => grabStart(e, chartOffset, chartZoom, updateLines)" @wheel="scrollZoom">
+			<Node v-for="node in chartNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node/>
 			<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
-				<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + chartOffset.x + 'px'" :y1="line[0].y + chartOffset.y + 'px'" :x2="line[1].x + chartOffset.x + 'px'" :y2="line[1].y + chartOffset.y + 'px'"></line>
+				<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + 'px'" :y1="line[0].y + 'px'" :x2="line[1].x + 'px'" :y2="line[1].y + 'px'"></line>
 			</svg>
 		</div>
 	</main>
@@ -329,6 +329,11 @@ button:active {
 		bottom: 0;
 		left: 0;
 		overflow: hidden;
+		zoom: v-bind(chartZoom);
+
+		&>.node {
+			transform: translate(v-bind("chartOffset.x + 'px'"), v-bind("chartOffset.y + 'px'"));
+		}
 
 		#chart_bg {
 			position: absolute;
@@ -339,6 +344,10 @@ button:active {
 			height: 100%;
 			width: 100%;
 			background-color: var(--bg1);
+
+			&>* {
+				transform: translate(v-bind("chartOffset.x + 'px'"), v-bind("chartOffset.y + 'px'"));
+			}
 		}
 	}
 }
