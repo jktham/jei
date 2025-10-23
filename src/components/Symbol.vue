@@ -13,4 +13,8 @@
 .flip {
 	transform: scale(1, -1);
 }
+
+.rotate {
+	transform: rotate(90deg);
+}
 </style>

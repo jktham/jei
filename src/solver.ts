@@ -76,8 +76,8 @@ function selectRecipe(recipes: Recipe[]): Recipe|undefined {
 	ratedRecipes.sort((a, b) => b.rating - a.rating);
 
 	let recipe = ratedRecipes[0];
-	if (recipe?.process.id == "minecraft.smelting") {
-		recipe.inputs = recipe.inputs.slice(0, 1);
+	if (recipe?.process.id == "minecraft.smelting") { // long list of ores
+		recipe.inputs = [recipe.inputs.find(stack => stack.id.endsWith("_0:0")) ?? recipe.inputs.find(stack => stack.id.endsWith("_0:1")) ?? recipe.inputs[0]!];
 	}
 	return recipe;
 }
@@ -101,7 +101,7 @@ const processes = new Map<string, number>([
 	["gregtech:wiremill", 100],
 	["gregtech:lathe", 100],
 	["gregtech:assembler", 100],
-	["gregtech:electric_blast_furnace", 200],
+	["gregtech:electric_blast_furnace", 300],
 	["gregtech:mixer", 100],
 	["gregtech:polarizer", 100],
 	["gregtech:centrifuge", 100],
@@ -142,7 +142,7 @@ const inputs: [string, number][] = [
 	["minecraft:cobblestone", 100],
 	["fluid:water", 100],
 	["fluid:plastic", 200],
-	["fluid:hydrogen_sulfide", 200],
+	["fluid:hydrogen_sulfide", 300],
 	["gregtech:meta_dust:103", 100],
 	["gregtech:meta_dust:2010", 100],
 ];

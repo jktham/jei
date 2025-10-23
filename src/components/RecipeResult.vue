@@ -3,10 +3,11 @@ import type { Recipe } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
 import { inject } from 'vue';
-import { addToChartKey } from '@/keys';
+import { addAndSolveKey, addToChartKey } from '@/keys';
 
 const { recipe } = defineProps<{ recipe: Recipe }>();
 const addToChart = inject(addToChartKey, () => {});
+const addAndSolve = inject(addAndSolveKey, () => {});
 
 </script>
 
@@ -20,7 +21,8 @@ const addToChart = inject(addToChartKey, () => {});
 	<div class="stacks outputs">
 		<Stack v-for="stack in recipe.outputs" :stack></Stack>
 	</div>
-	<button id="add" @click="addToChart(recipe)"><Symbol>add</Symbol></button>
+	<button id="add" title="add node" @click="addToChart(recipe)"><Symbol>add</Symbol></button>
+	<button id="solve" title="add node and solve" @click="addAndSolve(recipe)"><Symbol class="flip">graph_2</Symbol></button>
 </div>
 </template>
 
@@ -42,6 +44,7 @@ const addToChart = inject(addToChartKey, () => {});
 
 	#add {
 		margin-left: auto;
+		margin-right: -0.5rem;
 	}
 }
 </style>

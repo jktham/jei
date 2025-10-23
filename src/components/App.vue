@@ -12,7 +12,7 @@ import Node from './Node.vue';
 import { newUuid } from '@/util';
 import { solveTree } from '@/solver';
 import { alignTree, getNodeSize, getStackPos, grabStart } from '@/chart';
-import { addToChartKey, chartZoomKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
+import { addAndSolveKey, addToChartKey, chartZoomKey, dataKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
 // data
 const packs = await getPacks();
@@ -66,7 +66,7 @@ const status = computed(() => {
 	} else if (itemResults.value.length > 0) {
 		return `found ${itemResults.value.length} items`;
 	} else if (chartNodes.value.length > 0) {
-		return `total ${chartNodes.value.length} nodes`;
+		return `${chartNodes.value.length} nodes`;
 	} else if (data.value.names.size > 0) {
 		return `loaded ${data.value.names.size} items, ${data.value.recipes_r.size} recipes`;
 	} else {
@@ -169,6 +169,12 @@ const solve = (node: NodeT) => {
 	updateLines();
 };
 
+const addAndSolve = (recipe: Recipe) => {
+	addToChart(recipe);
+	let node = chartNodes.value[chartNodes.value.length-1]!;
+	solve(node);
+};
+
 // provide dependencies
 provide(searchKey, search);
 provide(addToChartKey, addToChart);
@@ -177,10 +183,12 @@ provide(setActiveNodeKey, setActiveNode);
 provide(updateLinesKey, updateLines);
 provide(solveKey, solve);
 provide(chartZoomKey, chartZoom);
+provide(addAndSolveKey, addAndSolve);
+provide(dataKey, data);
 
 // debug
 window.addEventListener("keyup", (e) => {
-	if (e.key == " ") {
+	if (e.key == " " && e.ctrlKey) {
 		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0]!;
 		let node: NodeT = {
 			recipe: recipe,
@@ -210,10 +218,10 @@ window.addEventListener("keyup", (e) => {
 		<span id="status">{{ status }}</span>
 		<div class="linebreak"></div>
 		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query, 'item')" />
-		<button id="back" :disabled="backDisabled" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
-		<button id="forward" :disabled="forwardDisabled" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
-		<button id="close" :disabled="closeDisabled" @click="clearResults(); setActiveNode(undefined, undefined);"><Symbol>close</Symbol></button>
-		<button id="clear" :disabled="chartNodes.length == 0" @click="clearChart()"><Symbol>delete</Symbol></button>
+		<button id="back" title="back" :disabled="backDisabled" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
+		<button id="forward" title="forward" :disabled="forwardDisabled" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
+		<button id="close" title="close search" :disabled="closeDisabled" @click="clearResults(); setActiveNode(undefined, undefined);"><Symbol>close</Symbol></button>
+		<button id="clear" title="clear chart" :disabled="chartNodes.length == 0" @click="clearChart()"><Symbol>delete</Symbol></button>
 	</nav>
 	<main id="main">
 		<div id="results">
