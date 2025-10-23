@@ -11,7 +11,7 @@ import { historyBack, historyForward, historyPush, historyGo } from '@/history';
 import Node from './Node.vue';
 import { newUuid } from '@/util';
 import { solveTree } from '@/solver';
-import { alignTree, getStackPos, grabStart } from '@/chart';
+import { alignTree, getNodeSize, getStackPos, grabStart } from '@/chart';
 import { addToChartKey, chartZoomKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
 // data
@@ -103,13 +103,13 @@ const addToChart = (recipe: Recipe) => {
 			node.children.push(activeNode.value);
 			node.position = {
 				x: activeNode.value.position.x,
-				y: activeNode.value.position.y + 120,
+				y: activeNode.value.position.y + getNodeSize(activeNode.value).y + 32,
 			};
 		} else if (activeNodeMode.value == "output" && node.recipe.outputs.map(r => r.id).find(id => activeNode.value?.recipe.inputs.map(r => r.id).includes(id))) {
 			activeNode.value.children.push(node);
 			node.position = {
 				x: activeNode.value.position.x,
-				y: activeNode.value.position.y - 120,
+				y: activeNode.value.position.y - (getNodeSize(activeNode.value).y + 32),
 			};
 		}
 	}
