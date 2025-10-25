@@ -64,6 +64,17 @@ export function sub(a: Position, b: Position): Position {
 	};
 }
 
+export function mul(a: Position, b: number): Position {
+	return {
+		x: a.x * b,
+		y: a.y * b,
+	};
+}
+
 export function pos(x: number, y: number): Position {
 	return {x, y};
+}
+
+export function len(pos: Position): number {
+	return (Math.sqrt(pos.x*pos.x + pos.y*pos.y));
 }

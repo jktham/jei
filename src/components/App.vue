@@ -2,14 +2,14 @@
 import { getPacks, loadPack } from '@/data';
 import { searchItems, searchRecipes } from '@/search';
 import { computedAsync } from '@vueuse/core';
-import { watch, ref, computed, provide } from 'vue';
+import { watch, ref, computed, provide, useTemplateRef } from 'vue';
 import ItemResult from './ItemResult.vue';
 import type { Recipe, Stack, SearchMode, History, Node as NodeT, NodeMode, Position } from '@/types';
 import RecipeResult from './RecipeResult.vue';
 import Symbol from './Symbol.vue';
 import { historyBack, historyForward, historyPush, historyGo } from '@/history';
 import Node from './Node.vue';
-import { newUuid } from '@/util';
+import { add, len, newUuid, sub } from '@/util';
 import { solveTree } from '@/solver';
 import { alignTree, getNodeSize, getStackPos, grabStart } from '@/chart';
 import { addAndSolveKey, addToChartKey, chartZoomKey, dataKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
@@ -66,7 +66,7 @@ const status = computed(() => {
 	} else if (itemResults.value.length > 0) {
 		return `found ${itemResults.value.length} items`;
 	} else if (chartNodes.value.length > 0) {
-		return `${chartNodes.value.length} nodes`;
+		return `${chartNodes.value.length} nodes, ${visibleNodes.value.length} visible, ${chartLines.value.length} lines, ${visibleLines.value.length} visible`;
 	} else if (data.value.names.size > 0) {
 		return `loaded ${data.value.names.size} items, ${data.value.recipes_r.size} recipes`;
 	} else {
@@ -82,7 +82,7 @@ const closeDisabled = computed(() => itemResults.value.length == 0 && recipeResu
 const chartNodes = ref<NodeT[]>([]);
 const activeNode = ref<NodeT|undefined>(undefined);
 const activeNodeMode = ref<NodeMode|undefined>(undefined);
-const chartLines = ref<[Position, Position][]>([]);
+const chartLines = ref<[Position, Position, number][]>([]);
 const chartOffset = ref<Position>({x: 0, y: 0});
 const chartZoom = ref<number>(1);
 
@@ -134,15 +134,19 @@ const setActiveNode = (node: NodeT|undefined, mode: NodeMode|undefined) => {
 };
 
 const updateLines = () => {
-	let lines: [Position, Position][] = [];
+	let lines: [Position, Position, number][] = [];
+	let seen: Set<number> = new Set();
+
 	for (let node of chartNodes.value) {
 		for (let child of node.children) {
+			if (seen.has(child.uuid)) continue;
 			for (let [i, id] of node.recipe.inputs.map(s => s.id).entries()) {
 				let j = child.recipe.outputs.map(s => s.id).indexOf(id);
 				if (j != -1) {
-					lines.push([getStackPos(node, i, "input"), getStackPos(child, j, "output")]);
+					lines.push([getStackPos(node, i, "input"), getStackPos(child, j, "output"), newUuid()]);
 				}
 			}
+			seen.add(child.uuid);
 		}
 	}
 	chartLines.value = lines;
@@ -160,6 +164,20 @@ const scrollZoom = (e: WheelEvent) => {
 		chartZoom.value /= 0.9;
 	}
 };
+
+const chart_div = useTemplateRef("chart_div");
+const chartIsVisible = (pos: Position): boolean => {
+	let size = Math.max(chart_div.value?.clientWidth ?? 100000, chart_div.value?.clientHeight ?? 100000) * chartZoom.value;
+	return len(add(pos, chartOffset.value)) * chartZoom.value < size * 1.2;
+};
+
+const visibleNodes = computed(() => {
+	return chartNodes.value.filter(node => chartIsVisible(node.position));
+});
+
+const visibleLines = computed(() => {
+	return chartLines.value.filter(line => chartIsVisible(line[0]) || chartIsVisible(line[1]));
+});
 
 // solver
 const solve = (node: NodeT) => {
@@ -232,10 +250,10 @@ window.addEventListener("keyup", (e) => {
 				<RecipeResult :recipe/>
 			</div>
 		</div>
-		<div id="chart" @pointerdown.stop="(e) => grabStart(e, chartOffset, chartZoom, updateLines)" @wheel="scrollZoom">
-			<Node v-for="node in chartNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node/>
+		<div id="chart" ref="chart_div" @pointerdown.stop="(e) => grabStart(e, chartOffset, chartZoom, undefined)" @wheel="scrollZoom">
+			<Node v-for="node in visibleNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node/>
 			<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
-				<line v-for="line of chartLines" stroke="white" stroke-dasharray="5,5" :x1="line[0].x + 'px'" :y1="line[0].y + 'px'" :x2="line[1].x + 'px'" :y2="line[1].y + 'px'"></line>
+				<line v-for="line of visibleLines" :key="line[2]" :x1="line[0].x + 'px'" :y1="line[0].y + 'px'" :x2="line[1].x + 'px'" :y2="line[1].y + 'px'"></line>
 			</svg>
 		</div>
 	</main>
@@ -345,7 +363,9 @@ button:active {
 			width: 100%;
 			background-color: var(--bg1);
 
-			&>* {
+			&>line {
+				stroke: var(--fg3);
+				stroke-dasharray: 5, 5;
 				transform: translate(v-bind("chartOffset.x + 'px'"), v-bind("chartOffset.y + 'px'"));
 			}
 		}
