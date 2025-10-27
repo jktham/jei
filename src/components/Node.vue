@@ -2,7 +2,7 @@
 import type { Node } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
-import { grabStart } from '@/chart';
+import { grab } from '@/chart';
 import { inject, ref } from 'vue';
 import { chartZoomKey, removeFromChartKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
@@ -18,7 +18,7 @@ const chartZoom = inject(chartZoomKey, ref(1));
 <template>
 <div class="node" :style="{left: node.position.x + 'px', top: node.position.y + 'px'}">
 	<div class="bar">
-		<button class="move" @pointerdown.stop="(e) => grabStart(e, node.position, chartZoom, updateLines)" title="move"><Symbol>menu</Symbol></button>
+		<button class="move" @pointerdown.left.stop="(e) => grab(e, node.position, chartZoom, updateLines)" title="move"><Symbol>menu</Symbol></button>
 		<button class="delete" @click="removeFromChart(node)" title="delete"><Symbol>close</Symbol></button>
 		<button class="solve" @click="solve(node)" title="solve"><Symbol class="flip">graph_2</Symbol></button>
 	</div>

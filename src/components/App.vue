@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getPacks, loadPack } from '@/data';
 import { searchItems, searchRecipes } from '@/search';
-import { computedAsync } from '@vueuse/core';
+import { computedAsync, computedWithControl } from '@vueuse/core';
 import { watch, ref, computed, provide, useTemplateRef } from 'vue';
 import ItemResult from './ItemResult.vue';
 import type { Recipe, Stack, SearchMode, History, Node as NodeT, NodeMode, Position } from '@/types';
@@ -9,9 +9,9 @@ import RecipeResult from './RecipeResult.vue';
 import Symbol from './Symbol.vue';
 import { historyBack, historyForward, historyPush, historyGo } from '@/history';
 import Node from './Node.vue';
-import { add, len, newUuid, sub } from '@/util';
+import { add, len, mul, newUuid, pos, sub } from '@/util';
 import { solveTree } from '@/solver';
-import { alignTree, getNodeSize, getStackPos, grabStart } from '@/chart';
+import { alignTree, chartToScreenPos, getNodeSize, getStackPos, grab, screenToChartPos, pointOnChart, lineOnChart, cheapOnChart } from '@/chart';
 import { addAndSolveKey, addToChartKey, chartZoomKey, dataKey, removeFromChartKey, searchKey, setActiveNodeKey, solveKey, updateLinesKey } from '@/keys';
 
 // data
@@ -88,12 +88,13 @@ const chartZoom = ref<number>(1);
 
 const addToChart = (recipe: Recipe) => {
 	clearResults();
+	let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), chartOffset.value, chartZoom.value, chartRect.value) : chartOffset.value;
 	let node: NodeT = {
 		recipe: recipe,
 		children: [],
 		position: {
-			x: -chartOffset.value.x,
-			y: -chartOffset.value.y,
+			x: cornerPos.x + 60,
+			y: cornerPos.y - 200,
 		},
 		uuid: newUuid(),
 	};
@@ -158,25 +159,39 @@ const clearChart = () => {
 };
 
 const scrollZoom = (e: WheelEvent) => {
-	if (e.deltaY > 0) {
-		chartZoom.value *= 0.9;
-	} else {
-		chartZoom.value /= 0.9;
-	}
+	let sign = Math.sign(e.deltaY);
+	let factor = sign > 0 ? 0.9 : 1/0.9;
+
+	let oldSize = pos(chart_div.value?.clientWidth ?? 0, chart_div.value?.clientHeight ?? 0);
+	let newSize = mul(oldSize, factor);
+	let cursorPos = screenToChartPos(pos(e.clientX, e.clientY), chartOffset.value, chartZoom.value, chartRect.value!);
+	let cursorOffset = sub(cursorPos, chartOffset.value);
+	let scaledOffset = pos(cursorOffset.x / newSize.x, cursorOffset.y / newSize.y);
+
+	chartOffset.value.x += scaledOffset.x * (newSize.x - oldSize.x);
+	chartOffset.value.y += scaledOffset.y * (newSize.y - oldSize.y);
+
+	chartZoom.value *= factor;
 };
 
 const chart_div = useTemplateRef("chart_div");
-const chartIsVisible = (pos: Position): boolean => {
-	let size = Math.max(chart_div.value?.clientWidth ?? 100000, chart_div.value?.clientHeight ?? 100000) * chartZoom.value;
-	return len(add(pos, chartOffset.value)) * chartZoom.value < size * 1.2;
+const chartRect = computed(() => chart_div.value?.getBoundingClientRect());
+
+const visibleNodes = ref(chartNodes.value);
+const visibleLines = ref(chartLines.value);
+
+const updateVisible = () => {
+	if (!chart_div.value) return;
+
+	visibleNodes.value = chartNodes.value.filter(node => cheapOnChart(node.position, chartOffset.value, chartZoom.value, chartRect.value!));
+	visibleLines.value = chartLines.value.filter(line => cheapOnChart(line[0], chartOffset.value, chartZoom.value, chartRect.value!) || cheapOnChart(line[1], chartOffset.value, chartZoom.value, chartRect.value!));
+
+	visibleNodes.value = visibleNodes.value.filter(node => pointOnChart(node.position, pos(400, 400), chartOffset.value, chartZoom.value, chartRect.value!))
+	visibleLines.value = visibleLines.value.filter(line => lineOnChart(line[0], line[1], pos(400, 400), chartOffset.value, chartZoom.value, chartRect.value!))
 };
 
-const visibleNodes = computed(() => {
-	return chartNodes.value.filter(node => chartIsVisible(node.position));
-});
-
-const visibleLines = computed(() => {
-	return chartLines.value.filter(line => chartIsVisible(line[0]) || chartIsVisible(line[1]));
+watch([chartNodes, chartLines, chartOffset, chartZoom, chartRect], () => {
+	updateVisible();
 });
 
 // solver
@@ -208,12 +223,13 @@ provide(dataKey, data);
 window.addEventListener("keyup", (e) => {
 	if (e.key == " " && e.ctrlKey) {
 		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0]!;
+		let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), chartOffset.value, chartZoom.value, chartRect.value) : chartOffset.value;
 		let node: NodeT = {
 			recipe: recipe,
 			children: [],
 			position: {
-				x: -chartOffset.value.x + 400 / chartZoom.value,
-				y: -chartOffset.value.y + 600 / chartZoom.value,
+				x: cornerPos.x + 60,
+				y: cornerPos.y - 200,
 			},
 			uuid: newUuid(),
 		};
@@ -250,7 +266,7 @@ window.addEventListener("keyup", (e) => {
 				<RecipeResult :recipe/>
 			</div>
 		</div>
-		<div id="chart" ref="chart_div" @pointerdown.stop="(e) => grabStart(e, chartOffset, chartZoom, undefined)" @wheel="scrollZoom">
+		<div id="chart" ref="chart_div" @pointerdown.left.stop="(e) => grab(e, chartOffset, chartZoom, updateVisible, true)" @wheel="scrollZoom">
 			<Node v-for="node in visibleNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node/>
 			<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
 				<line v-for="line of visibleLines" :key="line[2]" :x1="line[0].x + 'px'" :y1="line[0].y + 'px'" :x2="line[1].x + 'px'" :y2="line[1].y + 'px'"></line>
@@ -350,7 +366,7 @@ button:active {
 		zoom: v-bind(chartZoom);
 
 		&>.node {
-			transform: translate(v-bind("chartOffset.x + 'px'"), v-bind("chartOffset.y + 'px'"));
+			transform: translate(v-bind("-chartOffset.x + 'px'"), v-bind("-chartOffset.y + 'px'"));
 		}
 
 		#chart_bg {
@@ -365,8 +381,8 @@ button:active {
 
 			&>line {
 				stroke: var(--fg3);
-				stroke-dasharray: 5, 5;
-				transform: translate(v-bind("chartOffset.x + 'px'"), v-bind("chartOffset.y + 'px'"));
+				stroke-dasharray: v-bind("chartZoom <= 0.3 ? 'none' : '5, 5'");
+				transform: translate(v-bind("-chartOffset.x + 'px'"), v-bind("-chartOffset.y + 'px'"));
 			}
 		}
 	}
