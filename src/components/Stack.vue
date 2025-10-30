@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { searchKey } from '@/keys';
-import type { Stack } from '@/types';
+import type { SearchMode, Stack } from '@/types';
 import { imgFallback } from '@/util';
-import { inject } from 'vue';
 
-const { stack } = defineProps<{ stack: Stack }>();
-const search = inject(searchKey, () => {});
+const { stack } = defineProps<{
+	stack: Stack,
+}>();
+
+const emit = defineEmits<{
+	(e: 'search', id: string, mode: SearchMode): void,
+}>();
 
 </script>
 
 <template>
-	<div class="stack" @click="search(stack.id, 'recipe')" @contextmenu.prevent="search(stack.id, 'use')" :title="stack.name + '\n' + stack.id">
+	<div class="stack" @click="$emit('search', stack.id, 'recipe')" @contextmenu.prevent="$emit('search', stack.id, 'use')" :title="stack.name + '\n' + stack.id">
 		<img class="icon" :src="stack.icon" @error="imgFallback" loading="lazy" draggable="false"></img>
 		<span class="count" v-if="stack.count > 0">{{ stack.count }}</span>
 	</div>

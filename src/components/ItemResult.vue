@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import type { Stack as StackT } from '@/types';
+import type { SearchMode, Stack as StackT } from '@/types';
 import Stack from './Stack.vue';
 import { computed, inject } from 'vue';
-import { dataKey, searchKey } from '@/keys';
+import { dataKey } from '@/keys';
 import Symbol from './Symbol.vue';
 
-const { item } = defineProps<{ item: StackT }>();
-const search = inject(searchKey, () => {});
+const { item } = defineProps<{
+	item: StackT,
+}>();
+
+const emit = defineEmits<{
+	(e: 'search', id: string, mode: SearchMode): void,
+}>();
+
 const data = inject(dataKey);
 
 const info = computed(() => {
@@ -19,12 +25,12 @@ const info = computed(() => {
 
 <template>
 <div class="item">
-	<Stack :stack="item"></Stack>
+	<Stack :stack="item" @search="(id, mode) => $emit('search', id, mode)"></Stack>
 	<span class="name">{{ item.name }}</span>
 	<span class="id">{{ item.id }}</span>
 	<span class="info">{{ info }}</span>
-	<button id="recipes" title="recipes" @click="search(item.id, 'recipe')"><Symbol class="rotate">call_merge</Symbol></button>
-	<button id="uses" title="uses" @click="search(item.id, 'use')"><Symbol class="rotate">call_split</Symbol></button>
+	<button id="recipes" title="recipes" @click="$emit('search', item.id, 'recipe')"><Symbol class="rotate">call_merge</Symbol></button>
+	<button id="uses" title="uses" @click="$emit('search', item.id, 'use')"><Symbol class="rotate">call_split</Symbol></button>
 </div>
 </template>
 

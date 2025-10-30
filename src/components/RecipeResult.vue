@@ -1,28 +1,32 @@
 <script setup lang="ts">
-import type { Recipe } from '@/types';
+import type { Recipe, SearchMode } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
-import { inject } from 'vue';
-import { addAndSolveKey, addToChartKey } from '@/keys';
 
-const { recipe } = defineProps<{ recipe: Recipe }>();
-const addToChart = inject(addToChartKey, () => {});
-const addAndSolve = inject(addAndSolveKey, () => {});
+const { recipe } = defineProps<{
+	recipe: Recipe,
+}>();
+
+const emit = defineEmits<{
+	(e: 'search', id: string, mode: SearchMode): void,
+	(e: 'add', recipe: Recipe): void,
+	(e: 'solve', recipe: Recipe): void,
+}>();
 
 </script>
 
 <template>
 <div class="recipe">
-	<Stack :stack="recipe.machines[0] ?? recipe.process"></Stack>
+	<Stack :stack="recipe.machines[0] ?? recipe.process" @search="(id, mode) => $emit('search', id, mode)"></Stack>
 	<div class="stacks inputs" v-if="recipe.inputs.length > 0">
-		<Stack v-for="stack in recipe.inputs" :stack></Stack>
+		<Stack v-for="stack in recipe.inputs" :stack @search="(id, mode) => $emit('search', id, mode)"></Stack>
 	</div>
 	<div class="arrow" :title="recipe.process.id"><Symbol>arrow_forward</Symbol></div>
 	<div class="stacks outputs">
-		<Stack v-for="stack in recipe.outputs" :stack></Stack>
+		<Stack v-for="stack in recipe.outputs" :stack @search="(id, mode) => $emit('search', id, mode)"></Stack>
 	</div>
-	<button id="add" title="add node" @click="addToChart(recipe)"><Symbol>add</Symbol></button>
-	<button id="solve" title="add node and solve" @click="addAndSolve(recipe)"><Symbol class="flip">graph_2</Symbol></button>
+	<button id="add" title="add node" @click="$emit('add', recipe)"><Symbol>add</Symbol></button>
+	<button id="solve" title="add node and solve" @click="$emit('solve', recipe)"><Symbol class="flip">graph_2</Symbol></button>
 </div>
 </template>
 
