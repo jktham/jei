@@ -50,14 +50,16 @@ function solveStep(node: Node, nodes: Node[], depth: number, limit: number, seen
 		if (recipe) {
 			let child: Node = {
 				recipe: recipe,
-				children: [],
+				inputNodes: [],
+				outputNodes: [],
 				position: {
 					x: node.position.x,
 					y: node.position.y,
 				},
 				uuid: newUuid(),
 			};
-			node.children.push(child);
+			node.inputNodes.push(child);
+			child.outputNodes.push(node);
 			nodes.push(child);
 
 			seen = new Set(seen).add(stack.id);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { screenToChartPos, getNodeSize, fastPointOnChart, pointOnChart, alignTree, clampLine, generateLines } from '@/chart';
 import type { Node as NodeT, NodeMode, Position, Recipe, SearchMode, Line } from '@/types';
-import { pos, newUuid, mul, sub, cached } from '@/util';
+import { pos, newUuid, mul, sub, cached, len, div, add } from '@/util';
 import { ref, useTemplateRef, computed, watch, inject } from 'vue';
 import { grab } from '@/chart';
 import { dataKey } from '@/keys';
@@ -33,7 +33,8 @@ const addToChart = (recipe: Recipe) => {
 	let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), offset.value, zoom.value, chartRect.value) : offset.value;
 	let node: NodeT = {
 		recipe: recipe,
-		children: [],
+		inputNodes: [],
+		outputNodes: [],
 		position: {
 			x: cornerPos.x + 60,
 			y: cornerPos.y - 200,
@@ -43,13 +44,15 @@ const addToChart = (recipe: Recipe) => {
 
 	if (activeNode.value) {
 		if (activeNodeMode.value == "input" && activeNode.value.recipe.outputs.map(r => r.id).find(id => node.recipe.inputs.map(r => r.id).includes(id))) {
-			node.children.push(activeNode.value);
+			node.inputNodes.push(activeNode.value);
+			activeNode.value.outputNodes.push(node);
 			node.position = {
 				x: activeNode.value.position.x,
 				y: activeNode.value.position.y + getNodeSize(activeNode.value).y + 32,
 			};
 		} else if (activeNodeMode.value == "output" && node.recipe.outputs.map(r => r.id).find(id => activeNode.value?.recipe.inputs.map(r => r.id).includes(id))) {
-			activeNode.value.children.push(node);
+			activeNode.value.inputNodes.push(node);
+			node.outputNodes.push(activeNode.value);
 			node.position = {
 				x: activeNode.value.position.x,
 				y: activeNode.value.position.y - (getNodeSize(activeNode.value).y + 32),
@@ -64,7 +67,8 @@ const addToChart = (recipe: Recipe) => {
 
 const removeFromChart = (node: NodeT) => {
 	for (let cnode of nodes.value) {
-		cnode.children = cnode.children.filter(n => n.uuid != node.uuid);
+		cnode.inputNodes = cnode.inputNodes.filter(n => n.uuid != node.uuid);
+		cnode.outputNodes = cnode.outputNodes.filter(n => n.uuid != node.uuid);
 	}
 	nodes.value = nodes.value.filter(n => n.uuid != node.uuid);
 };
@@ -94,6 +98,16 @@ const scrollZoom = (e: WheelEvent) => {
 	zoom.value *= factor;
 };
 
+const followLine = (e: MouseEvent, line: Line) => {
+	let mousePos = screenToChartPos(pos(e.clientX, e.clientY), offset.value, zoom.value, chartRect.value!);
+	let stackPos = (len(sub(line.p0, mousePos)) > len(sub(line.p1, mousePos))) ? line.p0 : line.p1;
+
+	let chartSize = pos(chart_div.value?.clientWidth ?? 0, chart_div.value?.clientHeight ?? 0);
+	let centerOffset = div(chartSize, 2);
+	
+	offset.value = sub(stackPos, centerOffset);
+};
+
 // updates
 const updateLines = () => {
 	lines.value = generateLines(nodes.value);
@@ -110,7 +124,7 @@ const updateVisible = () => {
 	if (!chartRect.value) return;
 
 	visibleNodes.value = nodes.value.filter(node => fastPointOnChart(node.position, offset.value, zoom.value, chartRect.value!));
-	visibleNodes.value = visibleNodes.value.filter(node => pointOnChart(node.position, pos(1000, 1000), offset.value, zoom.value, chartRect.value!));
+	visibleNodes.value = visibleNodes.value.filter(node => pointOnChart(node.position, pos(400, 400), offset.value, zoom.value, chartRect.value!));
 
 	const {x: left, y: top} = screenToChartPos(pos(chartRect.value.left, chartRect.value.top), offset.value, zoom.value, chartRect.value);
 	const {x: right, y: bottom} = screenToChartPos(pos(chartRect.value.right, chartRect.value.bottom), offset.value, zoom.value, chartRect.value);
@@ -158,7 +172,8 @@ window.addEventListener("keyup", (e) => {
 		let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), offset.value, zoom.value, chartRect.value) : offset.value;
 		let node: NodeT = {
 			recipe: recipe,
-			children: [],
+			inputNodes: [],
+			outputNodes: [],
 			position: {
 				x: cornerPos.x + 60,
 				y: cornerPos.y - 200,
@@ -185,7 +200,8 @@ window.addEventListener("keyup", (e) => {
 			@solve="solve"
 		/>
 		<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
-			<line v-for="line of visibleLines" :key="line.uuid" :x1="line.p0.x + 'px'" :y1="line.p0.y + 'px'" :x2="line.p1.x + 'px'" :y2="line.p1.y + 'px'"></line>
+			<line class="line" v-for="line of visibleLines" :key="line.uuid" :x1="line.c0.x + 'px'" :y1="line.c0.y + 'px'" :x2="line.c1.x + 'px'" :y2="line.c1.y + 'px'"></line>
+			<line class="clickLine" v-for="line of visibleLines" :key="line.uuid" :x1="line.c0.x + 'px'" :y1="line.c0.y + 'px'" :x2="line.c1.x + 'px'" :y2="line.c1.y + 'px'" @click="followLine($event, line)"></line>
 		</svg>
 	</div>
 </template>
@@ -214,10 +230,24 @@ window.addEventListener("keyup", (e) => {
 		width: 100%;
 		background-color: var(--bg1);
 
-		&>line {
+		&>.line {
 			stroke: var(--fg3);
 			stroke-dasharray: v-bind("visibleLines.length > 100 ? 'none' : '5, 5'"); /* drawing this is pretty expensive for some reason */
 			transform: translate(v-bind("-offset.x + 'px'"), v-bind("-offset.y + 'px'"));
+		}
+
+		&>.clickLine {
+			stroke: var(--fg3);
+			stroke-opacity: 0.3;
+			stroke-width: 0.5rem;
+			transform: translate(v-bind("-offset.x + 'px'"), v-bind("-offset.y + 'px'"));
+			visibility: hidden;
+			cursor: pointer;
+			pointer-events: all;
+
+			&:hover {
+				visibility: visible;				
+			}
 		}
 	}
 }

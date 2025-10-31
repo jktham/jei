@@ -59,7 +59,8 @@ export type Position = {
 
 export type Node = {
 	recipe: Recipe,
-	children: Node[],
+	inputNodes: Node[],
+	outputNodes: Node[],
 	position: Position,
 	uuid: number,
 };
@@ -69,5 +70,7 @@ export type NodeMode = "input" | "output";
 export type Line = {
 	p0: Position,
 	p1: Position,
+	c0: Position, // clamped
+	c1: Position,
 	uuid: number,
 };

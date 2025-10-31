@@ -51,7 +51,7 @@ const margin = 32;
 
 function alignStep(node: Node) {
 	let offset = 0;
-	for (let child of node.children) {
+	for (let child of node.inputNodes) {
 		let size = getNodeSize(child);
 
 		child.position.x = node.position.x + offset;
@@ -63,12 +63,12 @@ function alignStep(node: Node) {
 }
 
 function getTreeWidth(node: Node): number {
-	if (node.children.length == 0) {
+	if (node.inputNodes.length == 0) {
 		return getNodeSize(node).x + margin;
 	}
 	
 	let width = 0;
-	for (let child of node.children) {
+	for (let child of node.inputNodes) {
 		width += getTreeWidth(child);
 	}
 	return Math.max(width, getNodeSize(node).x + margin);
@@ -115,41 +115,33 @@ export function clampLine(line: Line, left: number, top: number, right: number, 
 	if (line.p0.x < left && line.p1.x < left || line.p0.x > right && line.p1.x > right) return undefined;
 	if (line.p0.y < top && line.p1.y < top || line.p0.y > bottom && line.p1.y > bottom) return undefined;
 
-	let clamped: Line = {
-		p0: {x: 0, y: 0},
-		p1: {x: 0, y: 0},
-		uuid: line.uuid,
-	};
-
 	// todo: correct cross ratio
-	clamped.p0.x = Math.max(left, Math.min(right, line.p0.x));
-	clamped.p1.x = Math.max(left, Math.min(right, line.p1.x));
+	line.c0.x = Math.max(left, Math.min(right, line.p0.x));
+	line.c1.x = Math.max(left, Math.min(right, line.p1.x));
 
-	clamped.p0.y = Math.max(top, Math.min(bottom, line.p0.y));
-	clamped.p1.y = Math.max(top, Math.min(bottom, line.p1.y));
+	line.c0.y = Math.max(top, Math.min(bottom, line.p0.y));
+	line.c1.y = Math.max(top, Math.min(bottom, line.p1.y));
 
-	return clamped;
+	return line;
 }
 
 export function generateLines(nodes: Node[]): Line[] {
 	let lines: Line[] = [];
-	let seen: Set<number> = new Set();
-
 	for (let node of nodes) {
-		for (let child of node.children) {
-			if (seen.has(child.uuid)) continue;
+		for (let child of node.inputNodes) {
 			for (let [i, id] of node.recipe.inputs.map(s => s.id).entries()) {
 				let j = child.recipe.outputs.map(s => s.id).indexOf(id);
 				if (j != -1) {
 					let line = {
-						p0: getStackPos(node, i, "input"), 
-						p1: getStackPos(child, j, "output"), 
+						p0: getStackPos(child, j, "output"), // fixed dash end
+						p1: getStackPos(node, i, "input"),
+						c0: getStackPos(child, j, "output"),
+						c1: getStackPos(node, i, "input"),
 						uuid: newUuid(),
 					};
 					lines.push(line);
 				}
 			}
-			seen.add(child.uuid);
 		}
 	}
 	return lines;
