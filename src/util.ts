@@ -46,7 +46,8 @@ export function getRich(stack: RawStack, data: Data): Stack {
 	};
 }
 
-export function newUuid(): number {
+export function newUuid(seed?: string): number {
+	if (seed !== undefined) return generateHash(seed);
 	return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
 }
 
@@ -84,3 +85,29 @@ export function pos(x: number, y: number): Position {
 export function len(pos: Position): number {
 	return Math.sqrt(pos.x*pos.x + pos.y*pos.y);
 }
+
+const lastTime: Map<string, number> = new Map();
+const handlers: Map<string, number> = new Map();
+
+// only run callback every 'time' ms, with additional run after last attempt
+export function cached(name: string, time: number, callback: Function) {
+	let t0 = lastTime.get(name) ?? 0;
+	let t1 = Date.now();
+
+	if (t1 - t0 > time) {
+		lastTime.set(name, t1);
+		callback();
+	}
+
+	clearTimeout(handlers.get(name));
+	handlers.set(name, setTimeout(callback, time));
+}
+
+function generateHash(string: string): number {
+	let hash = 0;
+	for (const char of string) {
+		hash = (hash << 5) - hash + char.charCodeAt(0);
+		hash |= 0;
+	}
+	return hash;
+};

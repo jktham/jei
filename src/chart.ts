@@ -1,5 +1,5 @@
 import type { Line, Node, NodeMode, Position } from "./types";
-import { add, div, len, mul, pos, sub } from "./util";
+import { add, div, len, mul, newUuid, pos, sub } from "./util";
 
 export function grab(e: PointerEvent, position: Position, zoom: number, update?: () => void, flip: boolean = false) {
 	let initialOffset: Position = {
@@ -86,7 +86,7 @@ export function screenToChartPos(screenPos: Position, offset: Position, zoom: nu
 	return chartPos;
 }
 
-export const cheapOnChart = (pos: Position, offset: Position, zoom: number, chartRect: DOMRect): boolean => {
+export const fastPointOnChart = (pos: Position, offset: Position, zoom: number, chartRect: DOMRect): boolean => {
 	let size = Math.max(chartRect.width, chartRect.height);
 	let vec = sub(pos, offset);
 	return vec.x >= -1000 && vec.y >= -1000 && len(vec) * zoom < size * 2;
@@ -129,4 +129,28 @@ export function clampLine(line: Line, left: number, top: number, right: number, 
 	clamped.p1.y = Math.max(top, Math.min(bottom, line.p1.y));
 
 	return clamped;
+}
+
+export function generateLines(nodes: Node[]): Line[] {
+	let lines: Line[] = [];
+	let seen: Set<number> = new Set();
+
+	for (let node of nodes) {
+		for (let child of node.children) {
+			if (seen.has(child.uuid)) continue;
+			for (let [i, id] of node.recipe.inputs.map(s => s.id).entries()) {
+				let j = child.recipe.outputs.map(s => s.id).indexOf(id);
+				if (j != -1) {
+					let line = {
+						p0: getStackPos(node, i, "input"), 
+						p1: getStackPos(child, j, "output"), 
+						uuid: newUuid(),
+					};
+					lines.push(line);
+				}
+			}
+			seen.add(child.uuid);
+		}
+	}
+	return lines;
 }
