@@ -1,4 +1,4 @@
-import type { Node, NodeMode, Position } from "./types";
+import type { Line, Node, NodeMode, Position } from "./types";
 import { add, div, len, mul, pos, sub } from "./util";
 
 export function grab(e: PointerEvent, position: Position, zoom: number, update?: () => void, flip: boolean = false) {
@@ -6,7 +6,7 @@ export function grab(e: PointerEvent, position: Position, zoom: number, update?:
 		x: e.clientX / zoom - position.x * (flip ? -1 : 1),
 		y: e.clientY / zoom - position.y * (flip ? -1 : 1),
 	};
-	
+
 	function move(e: MouseEvent) {
 		position.x = e.clientX / zoom - initialOffset.x;
 		position.y = e.clientY / zoom - initialOffset.y;
@@ -89,15 +89,18 @@ export function screenToChartPos(screenPos: Position, offset: Position, zoom: nu
 export const cheapOnChart = (pos: Position, offset: Position, zoom: number, chartRect: DOMRect): boolean => {
 	let size = Math.max(chartRect.width, chartRect.height);
 	let vec = sub(pos, offset);
-	return vec.x >= -200 && vec.y >= -200 && len(vec) * zoom < size * 2;
-};
+	return vec.x >= -1000 && vec.y >= -1000 && len(vec) * zoom < size * 2;
+}
 
 export function pointOnChart(chartPos: Position, tolerance: Position, offset: Position, zoom: number, chartRect: DOMRect): boolean {
+	let max = chartToScreenPos(add(chartPos, tolerance), offset, zoom, chartRect);
+	let min = chartToScreenPos(sub(chartPos, tolerance), offset, zoom, chartRect);
+
 	return (
-		chartToScreenPos(add(chartPos, tolerance), offset, zoom, chartRect).x >= chartRect.left &&
-		chartToScreenPos(sub(chartPos, tolerance), offset, zoom, chartRect).x <= chartRect.right &&
-		chartToScreenPos(add(chartPos, tolerance), offset, zoom, chartRect).y >= chartRect.top &&
-		chartToScreenPos(sub(chartPos, tolerance), offset, zoom, chartRect).y <= chartRect.bottom
+		max.x >= chartRect.left &&
+		min.x <= chartRect.right &&
+		max.y >= chartRect.top &&
+		min.y <= chartRect.bottom
 	);
 }
 
@@ -106,4 +109,24 @@ export function lineOnChart(p0: Position, p1: Position, tolerance: Position, off
 		pointOnChart(p0, tolerance, offset, zoom, chartRect) ||
 		pointOnChart(p1, tolerance, offset, zoom, chartRect)
 	);
+}
+
+export function clampLine(line: Line, left: number, top: number, right: number, bottom: number): Line | undefined {
+	if (line.p0.x < left && line.p1.x < left || line.p0.x > right && line.p1.x > right) return undefined;
+	if (line.p0.y < top && line.p1.y < top || line.p0.y > bottom && line.p1.y > bottom) return undefined;
+
+	let clamped: Line = {
+		p0: {x: 0, y: 0},
+		p1: {x: 0, y: 0},
+		uuid: line.uuid,
+	};
+
+	// todo: correct cross ratio
+	clamped.p0.x = Math.max(left, Math.min(right, line.p0.x));
+	clamped.p1.x = Math.max(left, Math.min(right, line.p1.x));
+
+	clamped.p0.y = Math.max(top, Math.min(bottom, line.p0.y));
+	clamped.p1.y = Math.max(top, Math.min(bottom, line.p1.y));
+
+	return clamped;
 }

@@ -62,8 +62,8 @@ const status = computed(() => {
 		return `found ${recipeResults.value.length} recipes`;
 	} else if (itemResults.value.length > 0) {
 		return `found ${itemResults.value.length} items`;
-	} else if (chart.value?.chartNodes && chart.value.chartNodes.length > 0) {
-		return `${chart.value.chartNodes.length} nodes`;
+	} else if (chart.value?.nodes && chart.value.nodes.length > 0) {
+		return `${chart.value.nodes.length} nodes, ${chart.value.visibleNodes.length} visible, ${chart.value.lines.length} lines, ${chart.value.visibleLines.length} visible`;
 	} else if (data.value.names.size > 0) {
 		return `loaded ${data.value.names.size} items, ${data.value.recipes_r.size} recipes`;
 	} else {
@@ -94,7 +94,7 @@ provide(dataKey, data);
 		<button id="back" title="back" :disabled="backDisabled" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
 		<button id="forward" title="forward" :disabled="forwardDisabled" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
 		<button id="close" title="close search" :disabled="closeDisabled" @click="clearResults(); chart?.setActiveNode(undefined, undefined)"><Symbol>close</Symbol></button>
-		<button id="clear" title="clear chart" :disabled="chart?.chartNodes.length == 0" @click="chart?.clearChart()"><Symbol>delete</Symbol></button>
+		<button id="clear" title="clear chart" :disabled="chart?.nodes.length == 0" @click="chart?.clearChart()"><Symbol>delete</Symbol></button>
 	</nav>
 	<main id="main">
 		<div id="results">

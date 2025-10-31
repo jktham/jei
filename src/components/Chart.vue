@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { screenToChartPos, getNodeSize, getStackPos, cheapOnChart, pointOnChart, lineOnChart, alignTree } from '@/chart';
-import type { Node as NodeT, NodeMode, Position, Recipe, SearchMode } from '@/types';
-import { pos, newUuid, mul, sub } from '@/util';
+import { screenToChartPos, getNodeSize, getStackPos, cheapOnChart, pointOnChart, alignTree, clampLine } from '@/chart';
+import type { Node as NodeT, NodeMode, Position, Recipe, SearchMode, Line } from '@/types';
+import { pos, newUuid, mul, sub, len } from '@/util';
 import { ref, useTemplateRef, computed, watch, inject } from 'vue';
 import { grab } from '@/chart';
 import { dataKey } from '@/keys';
@@ -15,15 +15,15 @@ const emit = defineEmits<{
 
 const data = inject(dataKey);
 
-const chartNodes = ref<NodeT[]>([]);
+const nodes = ref<NodeT[]>([]);
+const lines = ref<Line[]>([]);
+const offset = ref<Position>({x: 0, y: 0});
+const zoom = ref<number>(1);
 const activeNode = ref<NodeT|undefined>(undefined);
 const activeNodeMode = ref<NodeMode|undefined>(undefined);
-const chartLines = ref<[Position, Position, number][]>([]);
-const chartOffset = ref<Position>({x: 0, y: 0});
-const chartZoom = ref<number>(1);
 
 const addToChart = (recipe: Recipe) => {
-	let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), chartOffset.value, chartZoom.value, chartRect.value) : chartOffset.value;
+	let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), offset.value, zoom.value, chartRect.value) : offset.value;
 	let node: NodeT = {
 		recipe: recipe,
 		children: [],
@@ -52,20 +52,20 @@ const addToChart = (recipe: Recipe) => {
 
 	activeNode.value = undefined;
 	activeNodeMode.value = undefined;
-	chartNodes.value = [...chartNodes.value, node];
+	nodes.value = [...nodes.value, node];
 	updateLines();
 };
 
 const removeFromChart = (node: NodeT) => {
-	for (let cnode of chartNodes.value) {
+	for (let cnode of nodes.value) {
 		cnode.children = cnode.children.filter(n => n.uuid != node.uuid);
 	}
-	chartNodes.value = chartNodes.value.filter(n => n.uuid != node.uuid);
+	nodes.value = nodes.value.filter(n => n.uuid != node.uuid);
 	updateLines();
 };
 
 const clearChart = () => {
-	chartNodes.value = [];
+	nodes.value = [];
 	updateLines();
 };
 
@@ -75,22 +75,26 @@ const setActiveNode = (node: NodeT|undefined, mode: NodeMode|undefined) => {
 };
 
 const updateLines = () => {
-	let lines: [Position, Position, number][] = [];
+	let newLines: Line[] = [];
 	let seen: Set<number> = new Set();
 
-	for (let node of chartNodes.value) {
+	for (let node of nodes.value) {
 		for (let child of node.children) {
 			if (seen.has(child.uuid)) continue;
 			for (let [i, id] of node.recipe.inputs.map(s => s.id).entries()) {
 				let j = child.recipe.outputs.map(s => s.id).indexOf(id);
 				if (j != -1) {
-					lines.push([getStackPos(node, i, "input"), getStackPos(child, j, "output"), newUuid()]);
+					newLines.push({
+						p0: getStackPos(node, i, "input"), 
+						p1: getStackPos(child, j, "output"), 
+						uuid: newUuid(),
+					});
 				}
 			}
 			seen.add(child.uuid);
 		}
 	}
-	chartLines.value = lines;
+	lines.value = newLines;
 };
 
 const scrollZoom = (e: WheelEvent) => {
@@ -99,55 +103,72 @@ const scrollZoom = (e: WheelEvent) => {
 
 	let oldSize = pos(chart_div.value?.clientWidth ?? 0, chart_div.value?.clientHeight ?? 0);
 	let newSize = mul(oldSize, factor);
-	let cursorPos = screenToChartPos(pos(e.clientX, e.clientY), chartOffset.value, chartZoom.value, chartRect.value!);
-	let cursorOffset = sub(cursorPos, chartOffset.value);
+	let cursorPos = screenToChartPos(pos(e.clientX, e.clientY), offset.value, zoom.value, chartRect.value!);
+	let cursorOffset = sub(cursorPos, offset.value);
 	let scaledOffset = pos(cursorOffset.x / newSize.x, cursorOffset.y / newSize.y);
 
-	chartOffset.value.x += scaledOffset.x * (newSize.x - oldSize.x);
-	chartOffset.value.y += scaledOffset.y * (newSize.y - oldSize.y);
+	offset.value.x += scaledOffset.x * (newSize.x - oldSize.x);
+	offset.value.y += scaledOffset.y * (newSize.y - oldSize.y);
 
-	chartZoom.value *= factor;
+	zoom.value *= factor;
 };
 
 const chart_div = useTemplateRef("chart_div");
 const chartRect = computed(() => chart_div.value?.getBoundingClientRect());
 
-const visibleNodes = ref(chartNodes.value);
-const visibleLines = ref(chartLines.value);
+const visibleNodes = ref(nodes.value);
+const visibleLines = ref(lines.value);
 
+let lastUpdateVisible = Date.now();
 const updateVisible = () => {
-	if (!chart_div.value) return;
+	let refreshPeriod = 0;
+	if (nodes.value.length + lines.value.length > 1000) refreshPeriod = 500;
 
-	visibleNodes.value = chartNodes.value.filter(node => cheapOnChart(node.position, chartOffset.value, chartZoom.value, chartRect.value!));
-	visibleLines.value = chartLines.value.filter(line => cheapOnChart(line[0], chartOffset.value, chartZoom.value, chartRect.value!) || cheapOnChart(line[1], chartOffset.value, chartZoom.value, chartRect.value!));
+	let time = Date.now();
+	if (time - lastUpdateVisible < refreshPeriod) return;
+	lastUpdateVisible = Date.now();
 
-	visibleNodes.value = visibleNodes.value.filter(node => pointOnChart(node.position, pos(400, 400), chartOffset.value, chartZoom.value, chartRect.value!))
-	visibleLines.value = visibleLines.value.filter(line => lineOnChart(line[0], line[1], pos(400, 400), chartOffset.value, chartZoom.value, chartRect.value!))
+	if (!chartRect.value) return;
+
+	visibleNodes.value = nodes.value.filter(node => cheapOnChart(node.position, offset.value, zoom.value, chartRect.value!));
+	visibleNodes.value = visibleNodes.value.filter(node => pointOnChart(node.position, pos(1000, 1000), offset.value, zoom.value, chartRect.value!));
+
+	const {x: left, y: top} = screenToChartPos(pos(chartRect.value.left, chartRect.value.top), offset.value, zoom.value, chartRect.value);
+	const {x: right, y: bottom} = screenToChartPos(pos(chartRect.value.right, chartRect.value.bottom), offset.value, zoom.value, chartRect.value);
+	visibleLines.value = lines.value.map(line => clampLine(line, left - 1000, top - 1000, right + 1000, bottom + 1000)).filter(line => line !== undefined);
 };
 
-watch([chartNodes, chartLines, chartOffset, chartZoom, chartRect], () => {
+// workaround for cached compute
+let timer = 0;
+const updateVisibleWatcher = () => {
 	updateVisible();
-});
+	clearTimeout(timer);
+	timer = setTimeout(() => updateVisible(), 500);
+};
+
+watch([nodes, lines, offset, zoom, chartRect], updateVisibleWatcher);
 
 // solver
 const solve = (node: NodeT) => {
 	if (!data) return;
 	let tree = solveTree(node, data.value);
 	alignTree(node);
-	chartNodes.value = [...chartNodes.value, ...tree];
+	nodes.value = [...nodes.value, ...tree];
 	updateLines();
 };
 
 const addAndSolve = (recipe: Recipe) => {
 	addToChart(recipe);
-	let node = chartNodes.value[chartNodes.value.length-1]!;
+	let node = nodes.value[nodes.value.length-1]!;
 	solve(node);
 };
 
 // expose
-
 defineExpose({
-	chartNodes,
+	nodes,
+	lines,
+	visibleNodes,
+	visibleLines,
 	setActiveNode,
 	clearChart,
 	addToChart,
@@ -159,7 +180,7 @@ window.addEventListener("keyup", (e) => {
 	if (!data) return;
 	if (e.key == " " && e.ctrlKey) {
 		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0]!;
-		let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), chartOffset.value, chartZoom.value, chartRect.value) : chartOffset.value;
+		let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), offset.value, zoom.value, chartRect.value) : offset.value;
 		let node: NodeT = {
 			recipe: recipe,
 			children: [],
@@ -173,7 +194,7 @@ window.addEventListener("keyup", (e) => {
 		let tree = solveTree(node, data.value);
 		alignTree(node);
 
-		chartNodes.value.push(node, ...tree);
+		nodes.value.push(node, ...tree);
 		updateLines();
 	}
 });
@@ -181,16 +202,16 @@ window.addEventListener("keyup", (e) => {
 </script>
 
 <template>
-	<div id="chart" ref="chart_div" @pointerdown.left.stop="(e) => grab(e, chartOffset, chartZoom, updateVisible, true)" @wheel="scrollZoom">
-		<Node v-for="node in chartNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node
+	<div id="chart" ref="chart_div" @pointerdown.left.stop="(e) => grab(e, offset, zoom, updateVisibleWatcher, true)" @wheel="scrollZoom">
+		<Node v-for="node in visibleNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node
 			@search="(id, mode) => $emit('search', id, mode)"
 			@setActive="setActiveNode"
-			@move="(e, pos) => grab(e, pos, chartZoom, updateLines)"
+			@move="(e, pos) => grab(e, pos, zoom, updateLines)"
 			@delete="removeFromChart"
 			@solve="solve"
 		/>
 		<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
-			<line v-for="line of visibleLines" :key="line[2]" :x1="line[0].x + 'px'" :y1="line[0].y + 'px'" :x2="line[1].x + 'px'" :y2="line[1].y + 'px'"></line>
+			<line v-for="line of visibleLines" :key="line.uuid" :x1="line.p0.x + 'px'" :y1="line.p0.y + 'px'" :x2="line.p1.x + 'px'" :y2="line.p1.y + 'px'"></line>
 		</svg>
 	</div>
 </template>
@@ -203,10 +224,10 @@ window.addEventListener("keyup", (e) => {
 	bottom: 0;
 	left: 0;
 	overflow: hidden;
-	zoom: v-bind(chartZoom);
+	zoom: v-bind(zoom);
 
 	&>.node {
-		transform: translate(v-bind("-chartOffset.x + 'px'"), v-bind("-chartOffset.y + 'px'"));
+		transform: translate(v-bind("-offset.x + 'px'"), v-bind("-offset.y + 'px'"));
 	}
 
 	#chart_bg {
@@ -221,8 +242,8 @@ window.addEventListener("keyup", (e) => {
 
 		&>line {
 			stroke: var(--fg3);
-			stroke-dasharray: v-bind("chartZoom <= 0.3 ? 'none' : '5, 5'");
-			transform: translate(v-bind("-chartOffset.x + 'px'"), v-bind("-chartOffset.y + 'px'"));
+			stroke-dasharray: v-bind("visibleLines.length > 100 ? 'none' : '5, 5'"); /* drawing this is pretty expensive for some reason */
+			transform: translate(v-bind("-offset.x + 'px'"), v-bind("-offset.y + 'px'"));
 		}
 	}
 }

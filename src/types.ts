@@ -65,3 +65,9 @@ export type Node = {
 };
 
 export type NodeMode = "input" | "output";
+
+export type Line = {
+	p0: Position,
+	p1: Position,
+	uuid: number,
+};
