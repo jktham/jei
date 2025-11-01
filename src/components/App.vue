@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { getPacks, loadPack } from '@/data';
 import { searchItems, searchRecipes } from '@/search';
-import { computedAsync } from '@vueuse/core';
+import { computedAsync, onKeyStroke } from '@vueuse/core';
 import { watch, ref, computed, provide, useTemplateRef } from 'vue';
 import ItemResult from './ItemResult.vue';
 import type { Recipe, Stack, SearchMode, History } from '@/types';
 import RecipeResult from './RecipeResult.vue';
 import Symbol from './Symbol.vue';
 import { historyBack, historyForward, historyPush, historyGo } from '@/history';
-import { dataKey } from '@/keys';
+import { dataKey, setStatusKey } from '@/keys';
 import Chart from './Chart.vue';
 
 // data
@@ -55,10 +55,18 @@ const clearResults = () => {
 	itemResults.value = [];
 	recipeResults.value = [];
 	historyPush(history.value, {query: "", mode: "item"});
+	chart.value?.setActiveNode(undefined, undefined);
+};
+
+const statusOverride = ref("");
+const setStatus = (text: string) => {
+	statusOverride.value = text;
 };
 
 const status = computed(() => {
-	if (recipeResults.value.length > 0) {
+	if (statusOverride.value) {
+		return statusOverride.value;
+	} else if (recipeResults.value.length > 0) {
 		return `found ${recipeResults.value.length} recipes`;
 	} else if (itemResults.value.length > 0) {
 		return `found ${itemResults.value.length} items`;
@@ -78,8 +86,14 @@ const closeDisabled = computed(() => itemResults.value.length == 0 && recipeResu
 // chart
 const chart = useTemplateRef("chart");
 
-// provide dependencies
+// events
+onKeyStroke("Escape", () => {
+	clearResults();
+});
+
+// dependencies
 provide(dataKey, data);
+provide(setStatusKey, setStatus);
 
 </script>
 
@@ -93,7 +107,7 @@ provide(dataKey, data);
 		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query, 'item')" />
 		<button id="back" title="back" :disabled="backDisabled" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
 		<button id="forward" title="forward" :disabled="forwardDisabled" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
-		<button id="close" title="close search" :disabled="closeDisabled" @click="clearResults(); chart?.setActiveNode(undefined, undefined)"><Symbol>close</Symbol></button>
+		<button id="close" title="close search" :disabled="closeDisabled" @click="clearResults"><Symbol>close</Symbol></button>
 		<button id="clear" title="clear chart" :disabled="chart?.nodes.length == 0" @click="chart?.clearChart()"><Symbol>delete</Symbol></button>
 	</nav>
 	<main id="main">

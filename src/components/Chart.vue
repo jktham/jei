@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { screenToChartPos, getNodeSize, fastPointOnChart, pointOnChart, alignTree, clampLine, generateLines, getSubTree as getTree } from '@/chart';
+import { screenToChartPos, getNodeSize, fastPointOnChart, pointOnChart, alignTree, clampLine, generateLines, getSubTree as getTree, getRoot } from '@/chart';
 import type { Node as NodeT, NodeMode, Position, Recipe, SearchMode, Line } from '@/types';
 import { pos, newUuid, mul, sub, cached, len, div, add } from '@/util';
 import { ref, useTemplateRef, computed, watch, inject } from 'vue';
 import { grab } from '@/chart';
-import { dataKey } from '@/keys';
+import { dataKey, setStatusKey } from '@/keys';
 import Node from './Node.vue';
 import { solveTree } from '@/solver';
 import { searchRecipes } from '@/search';
+import { onKeyStroke } from '@vueuse/core';
 
 const emit = defineEmits<{
 	(e: 'search', id: string, mode: SearchMode): void,
 }>();
 
 const data = inject(dataKey);
+const setStatus = inject(setStatusKey);
 
 const nodes = ref<NodeT[]>([]);
 const lines = ref<Line[]>([]);
@@ -118,6 +120,23 @@ const followLine = (e: MouseEvent, line: Line) => {
 	offset.value = sub(stackPos, centerOffset);
 };
 
+const solve = (node: NodeT) => {
+	if (!data) return;
+	setStatus?.("solving...");
+	
+	setTimeout(() => {
+		let tree = solveTree(node, data.value);
+		alignTree(node);
+		nodes.value = [...nodes.value, ...tree];
+		setStatus?.("");
+	}, 10);
+};
+
+const addAndSolveNode = (node: NodeT) => {
+	addNode(node);
+	solve(node);
+};
+
 // updates
 const updateLines = () => {
 	lines.value = generateLines(nodes.value);
@@ -148,20 +167,19 @@ const updateVisibleWatcher = () => {
 
 watch([nodes, lines, offset, zoom, chartRect], updateVisibleWatcher);
 
-// solver
-const solve = (node: NodeT) => {
-	if (!data) return;
-	let tree = solveTree(node, data.value);
-	alignTree(node);
-	nodes.value = [...nodes.value, ...tree];
-};
+// events
+onKeyStroke(" ", (e) => {
+	if (!data || !e.ctrlKey) return;
+	let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0];
+	if (recipe) addAndSolveNode(newNode(recipe));
+});
 
-const addAndSolveNode = (node: NodeT) => {
-	addNode(node);
-	solve(node);
-};
+onKeyStroke("Delete", (e) => {
+	if (!e.ctrlKey) return;
+	clearChart();
+});
 
-// expose
+// dependencies
 defineExpose({
 	nodes,
 	lines,
@@ -172,15 +190,6 @@ defineExpose({
 	addNode,
 	addAndSolveNode,
 	newNode,
-});
-
-// debug
-window.addEventListener("keyup", (e) => {
-	if (!data) return;
-	if (e.key == " " && e.ctrlKey) {
-		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0];
-		if (recipe) addAndSolveNode(newNode(recipe));
-	}
 });
 
 </script>
