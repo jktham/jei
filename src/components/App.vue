@@ -102,7 +102,7 @@ provide(dataKey, data);
 				<ItemResult :item @search="search"/>
 			</div>
 			<div v-for="recipe in recipeResults.slice(0, 1000)">
-				<RecipeResult :recipe @search="search" @add="chart?.addToChart($event); clearResults()" @solve="chart?.addAndSolve($event); clearResults()"/>
+				<RecipeResult :recipe @search="search" @add="chart?.addNode(chart?.newNode($event)!); clearResults()" @solve="chart?.addAndSolveNode(chart?.newNode($event)!); clearResults()"/>
 			</div>
 		</div>
 		<Chart ref="chart" @search="search"></Chart>

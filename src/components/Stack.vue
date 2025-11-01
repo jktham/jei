@@ -30,7 +30,7 @@ const emit = defineEmits<{
 }
 
 .stack:hover {
-	background-color: var(--bg4);
+	background-color: var(--tbg1);
 }
 
 .stack .icon {

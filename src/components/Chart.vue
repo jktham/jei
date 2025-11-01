@@ -156,8 +156,7 @@ const solve = (node: NodeT) => {
 	nodes.value = [...nodes.value, ...tree];
 };
 
-const addAndSolve = (recipe: Recipe) => {
-	let node = newNode(recipe);
+const addAndSolveNode = (node: NodeT) => {
 	addNode(node);
 	solve(node);
 };
@@ -170,8 +169,9 @@ defineExpose({
 	visibleLines,
 	setActiveNode,
 	clearChart,
-	addToChart: addNode,
-	addAndSolve,
+	addNode,
+	addAndSolveNode,
+	newNode,
 });
 
 // debug
@@ -179,7 +179,7 @@ window.addEventListener("keyup", (e) => {
 	if (!data) return;
 	if (e.key == " " && e.ctrlKey) {
 		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0];
-		if (recipe) addAndSolve(recipe);
+		if (recipe) addAndSolveNode(newNode(recipe));
 	}
 });
 
