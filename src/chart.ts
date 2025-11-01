@@ -1,19 +1,26 @@
 import type { Line, Node, NodeMode, Position } from "./types";
 import { add, div, len, mul, newUuid, pos, sub } from "./util";
 
-export function grab(e: PointerEvent, position: Position, zoom: number, update?: () => void, flip: boolean = false) {
-	let initialOffset: Position = {
-		x: e.clientX / zoom - position.x * (flip ? -1 : 1),
-		y: e.clientY / zoom - position.y * (flip ? -1 : 1),
-	};
+export function grab(e: PointerEvent, positions: Position[], zoom: number, update?: () => void, flip: boolean = false) {
+	if (!positions[0]) return;
+
+	let initialOffsets: Position[] = [];
+	for (let position of positions) {
+		initialOffsets.push({
+			x: e.clientX / zoom - position.x * (flip ? -1 : 1),
+			y: e.clientY / zoom - position.y * (flip ? -1 : 1),
+		});
+	}
 
 	function move(e: MouseEvent) {
-		position.x = e.clientX / zoom - initialOffset.x;
-		position.y = e.clientY / zoom - initialOffset.y;
+		for (let [i, position] of positions.entries()) {
+			position.x = e.clientX / zoom - initialOffsets[i]!.x;
+			position.y = e.clientY / zoom - initialOffsets[i]!.y;
 
-		if (flip) {
-			position.x *= -1;
-			position.y *= -1;
+			if (flip) {
+				position.x *= -1;
+				position.y *= -1;
+			}
 		}
 
 		update?.();
@@ -72,6 +79,14 @@ function getTreeWidth(node: Node): number {
 		width += getTreeWidth(child);
 	}
 	return Math.max(width, getNodeSize(node).x + margin);
+}
+
+export function getSubTree(node: Node): Node[] {
+	let nodes: Node[] = [node];
+	for (let child of node.inputNodes) {
+		nodes.push(...getSubTree(child));
+	}
+	return nodes;
 }
 
 export function chartToScreenPos(chartPos: Position, offset: Position, zoom: number, chartRect: DOMRect): Position {

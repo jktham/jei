@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { screenToChartPos, getNodeSize, fastPointOnChart, pointOnChart, alignTree, clampLine, generateLines } from '@/chart';
+import { screenToChartPos, getNodeSize, fastPointOnChart, pointOnChart, alignTree, clampLine, generateLines, getSubTree as getTree } from '@/chart';
 import type { Node as NodeT, NodeMode, Position, Recipe, SearchMode, Line } from '@/types';
 import { pos, newUuid, mul, sub, cached, len, div, add } from '@/util';
 import { ref, useTemplateRef, computed, watch, inject } from 'vue';
@@ -29,7 +29,7 @@ const visibleNodes = ref(nodes.value);
 const visibleLines = ref(lines.value);
 
 // methods
-const addToChart = (recipe: Recipe) => {
+const newNode = (recipe: Recipe): NodeT => {
 	let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), offset.value, zoom.value, chartRect.value) : offset.value;
 	let node: NodeT = {
 		recipe: recipe,
@@ -41,7 +41,10 @@ const addToChart = (recipe: Recipe) => {
 		},
 		uuid: newUuid(),
 	};
+	return node;
+};
 
+const addNode = (node: NodeT) => {
 	if (activeNode.value) {
 		if (activeNodeMode.value == "input" && activeNode.value.recipe.outputs.map(r => r.id).find(id => node.recipe.inputs.map(r => r.id).includes(id))) {
 			node.inputNodes.push(activeNode.value);
@@ -65,12 +68,19 @@ const addToChart = (recipe: Recipe) => {
 	nodes.value = [...nodes.value, node];
 };
 
-const removeFromChart = (node: NodeT) => {
-	for (let cnode of nodes.value) {
-		cnode.inputNodes = cnode.inputNodes.filter(n => n.uuid != node.uuid);
-		cnode.outputNodes = cnode.outputNodes.filter(n => n.uuid != node.uuid);
+const deleteNode = (node: NodeT) => {
+	for (let connected of [...node.inputNodes, ...node.outputNodes]) {
+		connected.inputNodes = connected.inputNodes.filter(n => n.uuid != node.uuid);
+		connected.outputNodes = connected.outputNodes.filter(n => n.uuid != node.uuid);
 	}
 	nodes.value = nodes.value.filter(n => n.uuid != node.uuid);
+};
+
+const deleteTree = (node: NodeT) => {
+	let tree = getTree(node);
+	for (let n of tree) {
+		deleteNode(n);
+	}
 };
 
 const clearChart = () => {
@@ -147,8 +157,8 @@ const solve = (node: NodeT) => {
 };
 
 const addAndSolve = (recipe: Recipe) => {
-	addToChart(recipe);
-	let node = nodes.value[nodes.value.length-1]!;
+	let node = newNode(recipe);
+	addNode(node);
 	solve(node);
 };
 
@@ -160,7 +170,7 @@ defineExpose({
 	visibleLines,
 	setActiveNode,
 	clearChart,
-	addToChart,
+	addToChart: addNode,
 	addAndSolve,
 });
 
@@ -168,36 +178,24 @@ defineExpose({
 window.addEventListener("keyup", (e) => {
 	if (!data) return;
 	if (e.key == " " && e.ctrlKey) {
-		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0]!;
-		let cornerPos = chartRect.value ? screenToChartPos(pos(chartRect.value.left, chartRect.value.bottom), offset.value, zoom.value, chartRect.value) : offset.value;
-		let node: NodeT = {
-			recipe: recipe,
-			inputNodes: [],
-			outputNodes: [],
-			position: {
-				x: cornerPos.x + 60,
-				y: cornerPos.y - 200,
-			},
-			uuid: newUuid(),
-		};
-
-		let tree = solveTree(node, data.value);
-		alignTree(node);
-
-		nodes.value = [...nodes.value, node, ...tree];
+		let recipe = searchRecipes("gregtech:meta_item_1:128", "recipe", data.value)[0];
+		if (recipe) addAndSolve(recipe);
 	}
 });
 
 </script>
 
 <template>
-	<div id="chart" ref="chart_div" @pointerdown.left.stop="(e) => grab(e, offset, zoom, updateVisibleWatcher, true)" @wheel="scrollZoom">
+	<div id="chart" ref="chart_div" @pointerdown.left.stop="(e) => grab(e, [offset], zoom, updateVisibleWatcher, true)" @wheel="scrollZoom">
 		<Node v-for="node in visibleNodes" :key="node.uuid" :class="{active: node.uuid == activeNode?.uuid}" :node
 			@search="(id, mode) => $emit('search', id, mode)"
 			@setActive="setActiveNode"
-			@move="(e, pos) => grab(e, pos, zoom, updateLinesWatcher)"
-			@delete="removeFromChart"
+			@move="(e, node) => grab(e, [node.position], zoom, updateLinesWatcher)"
+			@delete="deleteNode"
 			@solve="solve"
+			@moveTree="(e, node) => grab(e, [node.position, ...getTree(node).map(n => n.position)], zoom, updateLinesWatcher)"
+			@deleteTree="deleteTree"
+			@alignTree="(node) => {alignTree(node); updateLinesWatcher()}"
 		/>
 		<svg id="chart_bg" xmlns="http://www.w3.org/2000/svg">
 			<line class="line" v-for="line of visibleLines" :key="line.uuid" :x1="line.c0.x + 'px'" :y1="line.c0.y + 'px'" :x2="line.c1.x + 'px'" :y2="line.c1.y + 'px'"></line>

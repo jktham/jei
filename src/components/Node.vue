@@ -10,9 +10,12 @@ const { node } = defineProps<{
 const emit = defineEmits<{
 	(e: 'search', id: string, mode: SearchMode): void,
 	(e: 'setActive', node: Node, mode: NodeMode): void,
-	(e: 'move', event: PointerEvent, position: Position): void,
+	(e: 'move', event: PointerEvent, node: Node): void,
 	(e: 'delete', node: Node): void,
 	(e: 'solve', node: Node): void,
+	(e: 'moveTree', event: PointerEvent, node: Node): void,
+	(e: 'deleteTree', node: Node): void,
+	(e: 'alignTree', node: Node): void,
 }>();
 
 </script>
@@ -20,9 +23,9 @@ const emit = defineEmits<{
 <template>
 <div class="node" :style="{left: node.position.x + 'px', top: node.position.y + 'px'}">
 	<div class="bar">
-		<button class="move" @pointerdown.left.stop="(e) => $emit('move', e, node.position)" title="move"><Symbol>menu</Symbol></button>
-		<button class="delete" @click="$emit('delete', node)" title="delete"><Symbol>close</Symbol></button>
-		<button class="solve" @click="$emit('solve', node)" title="solve"><Symbol class="flip">graph_2</Symbol></button>
+		<button class="move" @pointerdown.left.stop="(e) => (e.shiftKey) ? $emit('moveTree', e, node) : $emit('move', e, node)" title="move / shift: move tree"><Symbol>menu</Symbol></button>
+		<button class="delete" @click="(e) => (e.shiftKey) ? $emit('deleteTree', node) : $emit('delete', node)" title="delete / shift: delete tree"><Symbol>close</Symbol></button>
+		<button class="solve" @click="(e) => (e.shiftKey) ? $emit('alignTree', node) : $emit('solve', node)" title="solve / shift: align tree"><Symbol class="flip">graph_2</Symbol></button>
 	</div>
 	<div class="content">
 		<div class="stacks inputs">
