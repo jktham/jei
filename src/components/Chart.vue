@@ -97,17 +97,29 @@ const setActiveNode = (node: NodeT|undefined, mode: NodeMode|undefined) => {
 const scrollZoom = (e: WheelEvent) => {
 	let sign = Math.sign(e.deltaY);
 	let factor = sign > 0 ? 0.9 : 1/0.9;
+	setZoom(zoom.value * factor, pos(e.clientX, e.clientY));
+};
+
+const setZoom = (val: number, center?: Position) => {
+	let factor = val / zoom.value;
+
+	if (!center) {
+		center = pos(
+			(chartRect.value?.left ?? 0) + (chartRect.value?.width ?? 0) / 2,
+			(chartRect.value?.top ?? 0) + (chartRect.value?.height ?? 0) / 2,
+		);
+	}
 
 	let oldSize = pos(chart_div.value?.clientWidth ?? 0, chart_div.value?.clientHeight ?? 0);
 	let newSize = mul(oldSize, factor);
-	let cursorPos = screenToChartPos(pos(e.clientX, e.clientY), offset.value, zoom.value, chartRect.value!);
+	let cursorPos = screenToChartPos(center, offset.value, zoom.value, chartRect.value!);
 	let cursorOffset = sub(cursorPos, offset.value);
 	let scaledOffset = pos(cursorOffset.x / newSize.x, cursorOffset.y / newSize.y);
 
 	offset.value.x += scaledOffset.x * (newSize.x - oldSize.x);
 	offset.value.y += scaledOffset.y * (newSize.y - oldSize.y);
 
-	zoom.value *= factor;
+	zoom.value = Math.min(val, 100);
 };
 
 const followLine = (e: MouseEvent, line: Line) => {
@@ -190,6 +202,8 @@ defineExpose({
 	addNode,
 	addAndSolveNode,
 	newNode,
+	zoom,
+	setZoom,
 });
 
 </script>

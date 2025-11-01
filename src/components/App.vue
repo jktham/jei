@@ -86,6 +86,15 @@ const closeDisabled = computed(() => itemResults.value.length == 0 && recipeResu
 // chart
 const chart = useTemplateRef("chart");
 
+const zoomModel = computed({
+	get: () => {
+		return Math.log(chart.value?.zoom ?? 1);
+	},
+	set: (val) => {
+		if (chart.value?.setZoom) chart.value.setZoom(Math.exp(val));
+	},
+});
+
 // events
 onKeyStroke("Escape", () => {
 	clearResults();
@@ -105,6 +114,7 @@ provide(setStatusKey, setStatus);
 		<span id="status">{{ status }}</span>
 		<div class="linebreak"></div>
 		<input id="search" placeholder="item search" v-model="query" @keyup.enter="search(query, 'item')" />
+		<input type="range" id="zoom" v-model="zoomModel" min="-4" max="4" step="0.01" title="zoom"/>
 		<button id="back" title="back" :disabled="backDisabled" @click="historyBack(history, search)"><Symbol>chevron_left</Symbol></button>
 		<button id="forward" title="forward" :disabled="forwardDisabled" @click="historyForward(history, search)"><Symbol>chevron_right</Symbol></button>
 		<button id="close" title="close search" :disabled="closeDisabled" @click="clearResults"><Symbol>close</Symbol></button>
@@ -173,6 +183,7 @@ button:active {
 		align-items: center;
 		height: 2.5rem;
 		margin-right: auto;
+		margin-left: 0.5rem;
 	}
 
 	#search {
@@ -185,8 +196,10 @@ button:active {
 		background-color: var(--bg3);
 	}
 
-	#back {
+	#zoom {
 		margin-left: auto;
+		margin-right: 0.5rem;
+		width: 10rem;
 	}
 }
 
