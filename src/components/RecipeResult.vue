@@ -21,7 +21,7 @@ const emit = defineEmits<{
 	<div class="stacks inputs" v-if="recipe.inputs.length > 0">
 		<Stack v-for="stack in recipe.inputs" :stack @search="(id, mode) => $emit('search', id, mode)"></Stack>
 	</div>
-	<div class="arrow" :title="recipe.process.id"><Symbol>arrow_forward</Symbol></div>
+	<div class="arrow" :title="`${recipe.process.id}\n${recipe.id}`"><Symbol>arrow_forward</Symbol></div>
 	<div class="stacks outputs">
 		<Stack v-for="stack in recipe.outputs" :stack @search="(id, mode) => $emit('search', id, mode)"></Stack>
 	</div>

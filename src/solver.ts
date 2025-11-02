@@ -1,90 +1,256 @@
+import TinyQueue from "tinyqueue";
 import { searchRecipes } from "./search";
-import type { Data, Node, Recipe } from "./types";
+import type { Data, Node, Recipe, Stack } from "./types";
 import { newUuid } from "./util";
 
+// idea:
+// build graph of path options
+// mark free source verts
+// dijkstra from sources
+// walk graph from root and pick lowest dist options
+
 export function solveTree(root: Node, data: Data): Node[] {
-	let nodes = solveStep(root, [], 20, 10000, new Set(), data);
+	let t0 = Date.now();
+	console.log("solving");
+	let graph = buildGraph(root.recipe, data);
+	console.log(`graph done, ${Date.now() - t0}ms`, graph);
+	dijkstra(0, graph);
+	console.log(`dijkstra done, ${Date.now() - t0}ms`);
+	// trimGraph(graph);
+	// console.log(`trim done, ${Date.now() - t0}ms`, graph);
+
+	let nodes = createNodes(graph);
+	console.log(`nodes done, ${Date.now() - t0}ms`, nodes);
+	replaceNode(nodes, 0, root);
 	return nodes;
 }
 
-const stop = new Set([
+const free = new Set([
 	"gregtech:hammer:0",
 	"gregtech:wire_cutter:0",
-	"gregtech:screndriver:0",
+	"gregtech:screwdriver:0",
 	"gregtech:file:0",
 	"gregtech:saw:0",
 	"gregtech:mortar:0",
+	"gregtech:knife:0",
+	"gregtech:wrench:0",
 	"gregtech:meta_item_1:461",
+	"gregtech:meta_lens:2000",
 	"fluid:water",
 	"gregtech:rubber_log:0",
 	"forge:bucketfilled:0",
 ]);
 
 for (let i=0; i<=57; i++) {
-	stop.add(`gregtech:meta_item_1:${i}`);
+	free.add(`gregtech:meta_item_1:${i}`);
 }
 
 for (let i=821; i<=835; i++) {
-	stop.add(`gregtech:meta_item_1:${i}`);
+	free.add(`gregtech:meta_item_1:${i}`);
 }
 
-const stopPrefixes = [
+const freePrefixes = [
 	"deepmoblearning:data_model_",
 	"gregtech:ore_",
 	"thermalfoundation:fertilizer:",
 	"minecraft:log",
 ];
 
-function solveStep(node: Node, nodes: Node[], depth: number, limit: number, seen: Set<string>, data: Data): Node[] {
-	if (depth <= 0) return nodes;
-	if (nodes.length >= limit) return nodes;
+function isFree(stack: Stack): boolean {
+	return free.has(stack.id) || freePrefixes.some(prefix => stack.id.startsWith(prefix));
+}
 
-	for (let stack of node.recipe.inputs) {
-		if (stop.has(stack.id)) continue;
-		if (stopPrefixes.some(id => stack.id.startsWith(id))) continue;
-		if (seen.has(stack.id)) continue;
+type Vertex = {
+	recipe: Recipe,
+	index: number,
+	cost: number,
+	dist: number,
+	parent?: number,
+	path?: number,
+	seenItems?: Set<string>,
+	stackIndex: number,
+};
 
-		let recipes = searchRecipes(stack.id, "recipe", data);
-		let recipe = selectRecipe(recipes);
+type Graph = {
+	vertices: Vertex[],
+	edges: number[][],
+	free: Vertex[],
+};
 
-		if (recipe) {
-			let child: Node = {
-				recipe: recipe,
-				inputNodes: [],
-				outputNodes: [],
-				position: {
-					x: node.position.x,
-					y: node.position.y,
-				},
-				uuid: newUuid(),
-			};
-			node.inputNodes.push(child);
-			child.outputNodes.push(node);
-			nodes.push(child);
+function newVertex(recipe: Recipe, index: number): Vertex {
+	return {
+		recipe,
+		index,
+		cost: getRecipeCost(recipe),
+		dist: Infinity,
+		parent: undefined,
+		path: undefined,
+		seenItems: undefined,
+		stackIndex: 0,
+	};
+}
 
-			seen = new Set(seen).add(stack.id);
-			nodes = solveStep(child, nodes, depth - 1, limit, seen, data);
+function buildGraph(root: Recipe, data: Data): Graph {
+	let graph: Graph = {
+		vertices: [],
+		edges: [],
+		free: [],
+	};
+
+	let queue: Vertex[] = [];
+	let r = newVertex(root, 0);
+	r.seenItems = new Set();
+	r.recipe.outputs.map(stack => r.seenItems!.add(stack.id));
+
+	graph.vertices.push(r);
+	graph.edges.push([]);
+	queue.push(r);
+
+	while (queue.length > 0 && graph.vertices.length < 10000) {
+		let u = queue.shift()!;
+
+		let neighbors: Vertex[] = [];
+		for (let [i, stack] of u.recipe.inputs.entries()) {
+			if (isFree(stack) || u.seenItems?.has(stack.id)) {
+				continue;
+			}
+
+			let options = searchRecipes(stack.id, 'recipe', data).map(r => newVertex(r, -1));
+
+			options = options.filter(v => v.cost != Infinity);
+			options.sort((a, b) => a.cost - b.cost);
+			options = options.slice(0, 1); // number of alternative paths
+
+			options.map(v => {
+				v.parent = u.index;
+				v.seenItems = new Set(u.seenItems);
+				v.recipe.outputs.map(stack => v.seenItems!.add(stack.id));
+				v.stackIndex = i;
+			});
+
+			neighbors.push(...options);
+		}
+		
+		if (u.recipe.inputs.every(isFree)) {
+			graph.free.push(u);
+		}
+
+		for (let v of neighbors) {
+			v.index = graph.vertices.length;
+			graph.vertices.push(v);
+			graph.edges.push([]);
+			queue.push(v);
+
+			graph.edges[u.index]!.push(v.index);
 		}
 	}
 
-	return nodes;
+	return graph;
 }
 
-type RatedRecipe = Recipe & {rating: number};
+function dijkstra(source: number, graph: Graph) {
+	if (source >= graph.vertices.length) throw new Error("invalid dijkstra source");
+	let queue = new TinyQueue<Vertex>([], (a, b) => a.dist - b.dist);
 
-function selectRecipe(recipes: Recipe[]): Recipe|undefined {
-	let ratedRecipes = rateRecipes(recipes);
-	ratedRecipes = ratedRecipes.filter(r => r.rating != -Infinity);
-	ratedRecipes.sort((a, b) => b.rating - a.rating);
+	let s = graph.vertices[source]!;
+	s.dist = 0;
+	queue.push(s);
 
-	let recipe = ratedRecipes[0];
-	if (recipe?.process.id == "minecraft.smelting") { // long list of ores
-		recipe.inputs = [recipe.inputs.find(stack => stack.id.endsWith("_0:0")) ?? recipe.inputs.find(stack => stack.id.endsWith("_0:1")) ?? recipe.inputs[0]!];
+	while (queue.length > 0) {
+		let u = queue.pop()!;
+
+		let neighbors: Vertex[] = graph.edges[u.index]!.map(i => graph.vertices[i]!);
+
+		for (let v of neighbors) {
+			let dist = u.dist + v.cost;
+			if (dist < v.dist) {
+				v.dist = dist;
+				v.path = u.index;
+				queue.push(v);
+			}
+		}
+
 	}
-	return recipe;
 }
 
-const processes = new Map<string, number>([
+function trimGraph(graph: Graph) {
+	let paths: number[][] = [];
+
+	for (let s of graph.free.sort((a, b) => a.dist - b.dist)) {
+		let u = graph.vertices[s.index]!;
+		let path: Vertex[] = [u];
+
+		while (u.path !== undefined) {
+			u = graph.vertices[u.path]!;
+			path.push(u);
+		}
+
+		path.reverse();
+		paths.push(path.map(v => v.index));
+	}
+	
+	if (paths.length > 0) {
+		let p = new Set(paths.flat());
+		graph.vertices = graph.vertices.filter(v => p.has(v.index));
+		graph.edges = graph.edges.map(e => e.filter(v => p.has(v)));
+	}
+}
+
+function createNodes(graph: Graph): Node[] {
+	let nodes: Map<number, Node> = new Map();
+	for (let v of graph.vertices) {
+		let node = {
+			recipe: v.recipe,
+			inputNodes: [],
+			outputNodes: [],
+			position: {
+				x: 0,
+				y: 0,
+			},
+			uuid: newUuid(),
+		};
+		nodes.set(v.index, node);
+	}
+	for (let [u, vs] of graph.edges.entries()) {
+		for (let v of vs) {
+			if (nodes.has(u) && nodes.has(v)) {
+				nodes.get(u)!.inputNodes.push(nodes.get(v)!);
+				nodes.get(v)!.outputNodes.push(nodes.get(u)!);
+			}
+		}
+	}
+	for (let node of nodes.values()) {
+		if (node.recipe.process.id == "minecraft.smelting") {
+			node.recipe.inputs = node.recipe.inputs.filter(s => s.name != "Spawner Shards").slice(0, 1); // only show first ore in list
+		}
+	}
+	return [...nodes.values()];
+}
+
+function replaceNode(nodes: Node[], index: number, newNode: Node) {
+	let oldNode = nodes[index];
+	if (oldNode) {
+		for (let input of oldNode.inputNodes) {
+			for (let i=0; i<input.outputNodes.length; i++) {
+				if (input.outputNodes[i] == oldNode) {
+					input.outputNodes[i] = newNode;
+				}
+			}
+		}
+		for (let output of oldNode.outputNodes) {
+			for (let i=0; i<output.inputNodes.length; i++) {
+				if (output.inputNodes[i] == oldNode) {
+					output.inputNodes[i] = newNode;
+				}
+			}
+		}
+		newNode.inputNodes.push(...oldNode.inputNodes);
+		newNode.outputNodes.push(...oldNode.outputNodes);
+		nodes[index] = newNode;
+	}
+}
+
+const processWeights: Map<string, number> = new Map([
 	["gregtech:material_tree", -Infinity],
 	["chisel.chiseling", -Infinity],
 	["jeresources.dungeon", -Infinity],
@@ -92,6 +258,7 @@ const processes = new Map<string, number>([
 	["jeresources.worldgen", -Infinity],
 
 	["gregtech:packer", -100],
+	["gregtech:cutter", -50],
 	["jeresources.mob", -100],
 	["gregtech:arc_furnace_recycling", -100],
 	["gregtech:extractor_recycling", -100],
@@ -101,7 +268,8 @@ const processes = new Map<string, number>([
 	["minecraft.crafting", 50],
 	["minecraft.smelting", 150],
 	["gregtech:wiremill", 100],
-	["gregtech:lathe", 100],
+	["gregtech:bender", 100],
+	["gregtech:lathe", 200],
 	["gregtech:assembler", 100],
 	["gregtech:electric_blast_furnace", 300],
 	["gregtech:mixer", 100],
@@ -111,12 +279,14 @@ const processes = new Map<string, number>([
 	["gregtech:gas_collector", 200],
 	["gregtech:coke_oven", 100],
 	["gregtech:chemical_reactor", 50],
+	["gregtech:electrolyzer", 100],
 	["gregtech:macerator", 100],
 	["gregtech:arc_furnace", 100],
 	["gregtech:fluid_spawn_location", 400],
+	["actuallyadditions.reconstructor", 200],
 ]);
 
-const inputs: [string, number][] = [
+const inputPrefixWeights: [string, number][] = [
 	["gregtech:meta_nugget", -100],
 	["nomilabs:meta_nugget", -100],
 	["gregtech:meta_dust_small", -100],
@@ -140,7 +310,7 @@ const inputs: [string, number][] = [
 	["gregtech:rubber_log", 100],
 	["gregtech:meta_item_1:438", 100],
 	["minecraft:log", 100],
-	["minecraft:glass", 100],
+	["minecraft:glass:0", 200],
 	["minecraft:cobblestone", 100],
 	["fluid:water", 100],
 	["fluid:plastic", 200],
@@ -149,20 +319,26 @@ const inputs: [string, number][] = [
 	["gregtech:meta_dust:2010", 100],
 ];
 
-// todo: preferred recipes
+const recipeWeights: Map<string, number> = new Map([
+	["33.3", 200], // water -> hydrogen, oxygen
+	["67.1804", 200], // liquid naquadria
+	["6.15", 200], // gravel -> sand
+	["6.14", 200], // cobble -> gravel
+	["38.0", 200], // cobble
+]);
 
-function rateRecipes(recipes: Recipe[]): RatedRecipe[] {
-	let rated = recipes.map(r => {return {...r, rating: 0}});
-
-	for (let recipe of rated) {
-		recipe.rating = 0;
-		if (processes.has(recipe.process.id)) recipe.rating += processes.get(recipe.process.id)!;
-		for (let stack of recipe.inputs) {
-			for (let [prefix, r] of inputs) {
-				if (stack.id.startsWith(prefix)) recipe.rating += r;
-			}
+function getRecipeCost(recipe: Recipe): number {
+	let score = 0;
+	if (processWeights.has(recipe.process.id)) score += processWeights.get(recipe.process.id)!;
+	for (let stack of recipe.inputs) {
+		for (let [prefix, r] of inputPrefixWeights) {
+			if (stack.id.startsWith(prefix)) score += r;
 		}
 	}
-	
-	return rated;
+	score += recipeWeights.get(recipe.id) ?? 0;
+	return scaleScore(score);
+}
+
+function scaleScore(score: number): number {
+	return Math.max(1000 - score, 0);
 }

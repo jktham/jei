@@ -139,7 +139,7 @@ const solve = (node: NodeT) => {
 	setTimeout(() => {
 		let tree = solveTree(node, data.value);
 		alignTree(node);
-		nodes.value = [...nodes.value, ...tree];
+		nodes.value = [...nodes.value, ...tree.slice(1)]; // root of tree already added
 		setStatus?.("");
 	}, 10);
 };

@@ -38,6 +38,7 @@ export type Recipe = {
 	machines: Stack[],
 	inputs: Stack[],
 	outputs: Stack[],
+	id: string,
 };
 
 export type SearchMode = "item" | "recipe" | "use";

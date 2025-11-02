@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@vueuse/core": "^13.9.0",
+    "tinyqueue": "^3.0.0",
     "vue": "^3.5.22"
   },
   "devDependencies": {

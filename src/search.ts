@@ -1,5 +1,5 @@
-import type { Data, Recipe, Stack, SearchMode } from "./types";
-import { dedupStacks, getRich } from "./util";
+import type { Data, Recipe, Stack, SearchMode, RawStack } from "./types";
+import { dedupStacks } from "./util";
 
 export function searchItems(query: string, data: Data): Stack[] {
 	if (!query) return [];
@@ -62,8 +62,47 @@ export function searchRecipes(id: string, mode: SearchMode, data: Data): Recipe[
 			machines: machines.map(m => getRich({id: m, count: 0}, data)),
 			inputs: dedupStacks(inputs).map(s => getRich(s, data)),
 			outputs: dedupStacks(outputs).map(s => getRich(s, data)),
+			id: `${i}.${j}`,
 		};
 		results.push(r);
 	}
 	return results;
+}
+
+const name_overrides: Map<string, string> = new Map([
+	["gregtech:material_tree", "Material Tree"],
+	["jeresources.mob", "Mob Drop"],
+	["jeresources.dungeon", "Dungeon Chest"],
+	["jeresources.villager", "Villager Trading"],
+	["jeresources.worldgen", "Worldgen"],
+	["jei.information", "Information"],
+	["gregtech:circuit.integrated", "Circuit"],
+	["gregtech:multiblock_info", "Multiblock Info"],
+]);
+
+const icon_overrides: Map<string, string> = new Map([
+	["gregtech:material_tree", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__sapling__0.png"],
+	["jeresources.mob", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__skull__2.png"],
+	["jeresources.dungeon", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__chest__0.png"],
+	["jeresources.villager", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__emerald__0.png"],
+	["jeresources.worldgen", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__compass__0.png"],
+	["jei.information", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
+	["gregtech:circuit.integrated", "/data/nomi_ceu_1.7.5_hm/icons/gregtech__meta_item_1__461.png"],
+	["gregtech:multiblock_info", "/data/nomi_ceu_1.7.5_hm/icons/minecraft__book__0.png"],
+]);
+
+// acquire wealth
+export function getRich(stack: RawStack, data: Data): Stack {
+	let id = data.oredict.get(stack.id)?.[0] || stack.id;
+	let name = data.names.get(id) || stack.id;
+
+	name = name_overrides.get(id) || name;
+	let icon = icon_overrides.get(id) || `/data/nomi_ceu_1.7.5_hm/icons/${id.replaceAll(":", "__")}.png`;
+
+	return {
+		id: id,
+		count: stack.count,
+		name: name,
+		icon: icon,
+	};
 }
