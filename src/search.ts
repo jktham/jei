@@ -1,3 +1,4 @@
+import { getRecipeScore } from "./solver";
 import type { Data, Recipe, Stack, SearchMode, RawStack } from "./types";
 import { dedupStacks } from "./util";
 
@@ -31,7 +32,9 @@ export function searchItems(query: string, data: Data): Stack[] {
 			icon: "/data/nomi_ceu_1.7.5_hm/icons/minecraft__paper__0.png",
 		})];
 	}
-	return res.map(([id, _]) => getRich({id, count: 0}, data));
+	let results = res.map(([id, _]) => getRich({id, count: 0}, data));
+	// results.sort((a, b) => (data.recipes_u.get(b.id)?.length ?? 0) - (data.recipes_u.get(a.id)?.length ?? 0))
+	return results;
 }
 
 export function searchRecipes(id: string, mode: SearchMode, data: Data): Recipe[] {
@@ -63,9 +66,12 @@ export function searchRecipes(id: string, mode: SearchMode, data: Data): Recipe[
 			inputs: dedupStacks(inputs).map(s => getRich(s, data)),
 			outputs: dedupStacks(outputs).map(s => getRich(s, data)),
 			id: `${i}.${j}`,
+			score: 0,
 		};
+		r.score = getRecipeScore(r);
 		results.push(r);
 	}
+	results.sort((a, b) => b.score - a.score);
 	return results;
 }
 

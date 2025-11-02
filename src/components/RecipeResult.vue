@@ -2,6 +2,7 @@
 import type { Recipe, SearchMode } from '@/types';
 import Symbol from './Symbol.vue';
 import Stack from './Stack.vue';
+import { computed } from 'vue';
 
 const { recipe } = defineProps<{
 	recipe: Recipe,
@@ -12,6 +13,10 @@ const emit = defineEmits<{
 	(e: 'add', recipe: Recipe): void,
 	(e: 'solve', recipe: Recipe): void,
 }>();
+
+const info = computed(() => {
+	return `${Math.round(recipe.score)} score`.replace("Infinity", "Inf");
+});
 
 </script>
 
@@ -25,6 +30,7 @@ const emit = defineEmits<{
 	<div class="stacks outputs">
 		<Stack v-for="stack in recipe.outputs" :stack @search="(id, mode) => $emit('search', id, mode)"></Stack>
 	</div>
+	<span class="info">{{ info }}</span>
 	<button id="add" title="add node" @click="$emit('add', recipe)"><Symbol>add</Symbol></button>
 	<button id="solve" title="add node and solve" @click="$emit('solve', recipe)"><Symbol class="flip">graph_2</Symbol></button>
 </div>
@@ -46,8 +52,13 @@ const emit = defineEmits<{
 		overflow: auto;
 	}
 
-	#add {
+	.info {
 		margin-left: auto;
+		color: var(--fg3);
+		text-wrap: nowrap;
+	}
+
+	#add {
 		margin-right: -0.5rem;
 	}
 }

@@ -97,6 +97,14 @@ export function getRoot(node: Node): Node { // todo: handle multiple roots?
 	return root;
 }
 
+export function getPath(node: Node): Node[] {
+	let nodes = [node];
+	for (let parent of node.outputNodes) {
+		nodes.push(...getPath(parent));
+	}
+	return nodes;
+}
+
 export function chartToScreenPos(chartPos: Position, offset: Position, zoom: number, chartRect: DOMRect): Position {
 	let screenOffset = mul(sub(chartPos, offset), zoom);
 	let screenPos = add(screenOffset, pos(chartRect.x, chartRect.y));

@@ -71,7 +71,7 @@ const status = computed(() => {
 	} else if (itemResults.value.length > 0) {
 		return `found ${itemResults.value.length} items`;
 	} else if (chart.value?.nodes && chart.value.nodes.length > 0) {
-		return `${chart.value.nodes.length} nodes, ${chart.value.visibleNodes.length} visible, ${chart.value.lines.length} lines, ${chart.value.visibleLines.length} visible`;
+		return `${chart.value.visibleNodes.length}/${chart.value.nodes.length} nodes, ${chart.value.visibleLines.length}/${chart.value.lines.length} lines`;
 	} else if (data.value.names.size > 0) {
 		return `loaded ${data.value.names.size} items, ${data.value.recipes_r.size} recipes`;
 	} else {
@@ -184,6 +184,7 @@ button:active {
 		height: 2.5rem;
 		margin-right: auto;
 		margin-left: 0.5rem;
+		text-wrap: nowrap;
 	}
 
 	#search {

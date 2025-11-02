@@ -49,6 +49,7 @@ const info = computed(() => {
 	.info {
 		margin-left: auto;
 		color: var(--fg3);
+		text-wrap: nowrap;
 	}
 
 	#recipes {

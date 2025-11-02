@@ -39,6 +39,7 @@ export type Recipe = {
 	inputs: Stack[],
 	outputs: Stack[],
 	id: string,
+	score: number,
 };
 
 export type SearchMode = "item" | "recipe" | "use";

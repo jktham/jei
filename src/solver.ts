@@ -2,6 +2,7 @@ import TinyQueue from "tinyqueue";
 import { searchRecipes } from "./search";
 import type { Data, Node, Recipe, Stack } from "./types";
 import { newUuid } from "./util";
+import { getPath } from "./chart";
 
 // idea:
 // build graph of path options
@@ -12,10 +13,16 @@ import { newUuid } from "./util";
 export function solveTree(root: Node, data: Data): Node[] {
 	let t0 = Date.now();
 	console.log("solving");
-	let graph = buildGraph(root.recipe, data);
+
+	let path = getPath(root);
+	let prevSeenItems = new Set(path.flatMap(n => n.recipe.outputs.map(s => s.id)));
+
+	let graph = buildGraph(root.recipe, data, prevSeenItems);
 	console.log(`graph done, ${Date.now() - t0}ms`, graph);
+
 	dijkstra(0, graph);
 	console.log(`dijkstra done, ${Date.now() - t0}ms`);
+
 	// trimGraph(graph);
 	// console.log(`trim done, ${Date.now() - t0}ms`, graph);
 
@@ -81,7 +88,7 @@ function newVertex(recipe: Recipe, index: number): Vertex {
 	return {
 		recipe,
 		index,
-		cost: getRecipeCost(recipe),
+		cost: scaleCost(recipe.score),
 		dist: Infinity,
 		parent: undefined,
 		path: undefined,
@@ -90,7 +97,7 @@ function newVertex(recipe: Recipe, index: number): Vertex {
 	};
 }
 
-function buildGraph(root: Recipe, data: Data): Graph {
+function buildGraph(root: Recipe, data: Data, prevSeenItems?: Set<string>): Graph {
 	let graph: Graph = {
 		vertices: [],
 		edges: [],
@@ -99,7 +106,7 @@ function buildGraph(root: Recipe, data: Data): Graph {
 
 	let queue: Vertex[] = [];
 	let r = newVertex(root, 0);
-	r.seenItems = new Set();
+	r.seenItems = new Set(prevSeenItems);
 	r.recipe.outputs.map(stack => r.seenItems!.add(stack.id));
 
 	graph.vertices.push(r);
@@ -327,18 +334,22 @@ const recipeWeights: Map<string, number> = new Map([
 	["38.0", 200], // cobble
 ]);
 
-function getRecipeCost(recipe: Recipe): number {
+export function getRecipeScore(recipe: Recipe): number {
 	let score = 0;
 	if (processWeights.has(recipe.process.id)) score += processWeights.get(recipe.process.id)!;
+	let used = new Array(inputPrefixWeights.length).fill(0);
 	for (let stack of recipe.inputs) {
-		for (let [prefix, r] of inputPrefixWeights) {
-			if (stack.id.startsWith(prefix)) score += r;
+		for (let [i, [prefix, r]] of inputPrefixWeights.entries()) {
+			if (stack.id.startsWith(prefix) && used[i] == 0) { // only apply each prefix weight once
+				score += r;
+				used[i]++;
+			}
 		}
 	}
 	score += recipeWeights.get(recipe.id) ?? 0;
-	return scaleScore(score);
+	return score;
 }
 
-function scaleScore(score: number): number {
+function scaleCost(score: number): number {
 	return Math.max(1000 - score, 0);
 }
